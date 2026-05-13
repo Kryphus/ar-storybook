@@ -228,11 +228,11 @@
 
     <hr>
     <label><b>🏝️ Diorama</b></label>
-    <label>Scale: <span class="value" id="val-diorama">0.15</span></label>
-    <input type="range" id="slider-diorama" min="0.005" max="5" step="0.005" value="0.15" oninput="updateScene()">
+    <label>Scale: <span class="value" id="val-diorama">2.696</span></label>
+    <input type="range" id="slider-diorama" min="0.001" max="50" step="0.005" value="2.696" oninput="updateScene()">
 
-    <label>Height (Y): <span class="value" id="val-diorama-y">0</span></label>
-    <input type="range" id="slider-diorama-y" min="-20" max="20" step="0.1" value="0" oninput="updateScene()">
+    <label>Height (Y): <span class="value" id="val-diorama-y">-42.2</span></label>
+    <input type="range" id="slider-diorama-y" min="-100" max="100" step="0.1" value="-42.2" oninput="updateScene()">
 
     <label>Rotation: <span class="value" id="val-diorama-rot">-90</span>°</label>
     <input type="range" id="slider-diorama-rot" min="-180" max="180" step="5" value="-90" oninput="updateScene()">
@@ -243,35 +243,35 @@
     <hr>
     <label><b>🐢 Pagong</b></label>
     <label>Scale: <span class="value" id="val-pagong-s">1.2</span></label>
-    <input type="range" id="slider-pagong-s" min="0.005" max="5" step="0.005" value="1.2" oninput="updateScene()">
+    <input type="range" id="slider-pagong-s" min="0.001" max="10" step="0.001" value="1.2" oninput="updateScene()">
 
-    <label>X: <span class="value" id="val-pagong-x">-0.15</span></label>
-    <input type="range" id="slider-pagong-x" min="-20" max="20" step="0.1" value="-0.15" oninput="updateScene()">
+    <label>X: <span class="value" id="val-pagong-x">2</span></label>
+    <input type="range" id="slider-pagong-x" min="-100" max="100" step="0.1" value="2" oninput="updateScene()">
 
-    <label>Y: <span class="value" id="val-pagong-y">5.60</span></label>
-    <input type="range" id="slider-pagong-y" min="-20" max="20" step="0.1" value="5.60" oninput="updateScene()">
+    <label>Y: <span class="value" id="val-pagong-y">2.9</span></label>
+    <input type="range" id="slider-pagong-y" min="-100" max="100" step="0.1" value="2.9" oninput="updateScene()">
 
-    <label>Z: <span class="value" id="val-pagong-z">-20</span></label>
-    <input type="range" id="slider-pagong-z" min="-20" max="20" step="0.1" value="-20" oninput="updateScene()">
+    <label>Z: <span class="value" id="val-pagong-z">-13.7</span></label>
+    <input type="range" id="slider-pagong-z" min="-100" max="100" step="0.1" value="-13.7" oninput="updateScene()">
 
     <hr>
     <label><b>🐇 Kuneho</b></label>
     <label>Scale: <span class="value" id="val-kuneho-s">0.03</span></label>
-    <input type="range" id="slider-kuneho-s" min="0.005" max="5" step="0.005" value="0.03" oninput="updateScene()">
+    <input type="range" id="slider-kuneho-s" min="0.001" max="10" step="0.001" value="0.03" oninput="updateScene()">
 
-    <label>X: <span class="value" id="val-kuneho-x">0.15</span></label>
-    <input type="range" id="slider-kuneho-x" min="-20" max="20" step="0.1" value="0.15" oninput="updateScene()">
+    <label>X: <span class="value" id="val-kuneho-x">2.9</span></label>
+    <input type="range" id="slider-kuneho-x" min="-100" max="100" step="0.1" value="2.9" oninput="updateScene()">
 
-    <label>Y: <span class="value" id="val-kuneho-y">11</span></label>
-    <input type="range" id="slider-kuneho-y" min="-20" max="20" step="0.1" value="11" oninput="updateScene()">
+    <label>Y: <span class="value" id="val-kuneho-y">10.8</span></label>
+    <input type="range" id="slider-kuneho-y" min="-100" max="100" step="0.1" value="10.8" oninput="updateScene()">
 
-    <label>Z: <span class="value" id="val-kuneho-z">5.90</span></label>
-    <input type="range" id="slider-kuneho-z" min="-20" max="20" step="0.1" value="5.90" oninput="updateScene()">
+    <label>Z: <span class="value" id="val-kuneho-z">12.7</span></label>
+    <input type="range" id="slider-kuneho-z" min="-100" max="100" step="0.1" value="12.7" oninput="updateScene()">
 
     <hr>
     <label><b>📐 Scene</b></label>
     <label>Height: <span class="value" id="val-height">0.2</span></label>
-    <input type="range" id="slider-height" min="0" max="20" step="0.1" value="0.2" oninput="updateScene()">
+    <input type="range" id="slider-height" min="-50" max="50" step="0.1" value="0.2" oninput="updateScene()">
 
     <button onclick="copyValues()" style="margin-top:10px;width:100%;padding:8px;border:none;border-radius:6px;background:#667eea;color:white;font-size:0.75rem;cursor:pointer;">📋 Copy Values</button>
     <p style="margin-top:6px;opacity:0.5;font-size:0.6rem;">Pinch to zoom & two-finger rotate also work</p>
@@ -330,8 +330,8 @@
         <a-entity
           id="diorama-base"
           gltf-model="#diorama-model"
-          scale="0.15 0.15 0.15"
-          position="0 0 0">
+          scale="2.696 2.696 2.696"
+          position="0 -42.2 0">
         </a-entity>
 
         <!-- TURTLE (Pagong) -->
@@ -339,7 +339,7 @@
           id="pagong"
           gltf-model="#turtle-model"
           animation-mixer="clip: *; loop: repeat"
-          position="-0.15 5.60 -20"
+          position="2 2.9 -13.7"
           scale="1.2 1.2 1.2"
           rotation="0 45 0">
         </a-entity>
@@ -349,7 +349,7 @@
           id="kuneho"
           gltf-model="#rabbit-model"
           animation-mixer="clip: *; loop: repeat"
-          position="0.15 11 5.90"
+          position="2.9 10.8 12.7"
           scale="0.03 0.03 0.03"
           rotation="0 -45 0">
         </a-entity>

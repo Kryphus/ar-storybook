@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Preview — Si Pagong at si Kuneho</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+  <!-- aframe-extras: plays GLTF animations -->
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.5.0/dist/aframe-extras.min.js"></script>
+
+  <!-- Orbit controls for desktop mouse interaction -->
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+    }
+
+    /* Info bar */
+    #info-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #info-bar .title {
+      font-weight: 600;
+    }
+
+    #info-bar .hint {
+      opacity: 0.6;
+      font-size: 0.75rem;
+    }
+
+    /* Debug panel — same as ar.html */
+    #debug-panel {
+      position: fixed;
+      top: 50px;
+      right: 10px;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 12px;
+      border-radius: 12px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      z-index: 200;
+      width: 220px;
+      max-height: calc(100vh - 70px);
+      overflow-y: auto;
+    }
+    #debug-panel hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      margin: 10px 0 4px;
+    }
+    #debug-panel label {
+      display: block;
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+    #debug-panel input[type=range] {
+      width: 100%;
+    }
+    #debug-panel .value {
+      float: right;
+      opacity: 0.7;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Info Bar -->
+  <div id="info-bar">
+    <span class="title">🔍 3D Preview Mode</span>
+    <span class="hint">Left-click drag to orbit · Scroll to zoom · Right-click drag to pan</span>
+  </div>
+
+  <!-- Debug Panel (always visible in preview) -->
+  <div id="debug-panel">
+    <strong>🔧 Live Tweaks</strong>
+
+    <hr>
+    <label><b>🏝️ Diorama</b></label>
+    <label>Scale: <span class="value" id="val-diorama">2.696</span></label>
+    <input type="range" id="slider-diorama" min="0.001" max="50" step="0.005" value="2.696" oninput="updateScene()">
+
+    <label>Height (Y): <span class="value" id="val-diorama-y">-42.2</span></label>
+    <input type="range" id="slider-diorama-y" min="-100" max="100" step="0.1" value="-42.2" oninput="updateScene()">
+
+    <label>Rotation: <span class="value" id="val-diorama-rot">-90</span>°</label>
+    <input type="range" id="slider-diorama-rot" min="-180" max="180" step="5" value="-90" oninput="updateScene()">
+
+    <label>Tilt: <span class="value" id="val-diorama-tilt">0</span>°</label>
+    <input type="range" id="slider-diorama-tilt" min="-180" max="180" step="5" value="0" oninput="updateScene()">
+
+    <hr>
+    <label><b>🐢 Pagong</b></label>
+    <label>Scale: <span class="value" id="val-pagong-s">1.2</span></label>
+    <input type="range" id="slider-pagong-s" min="0.001" max="10" step="0.001" value="1.2" oninput="updateScene()">
+
+    <label>X: <span class="value" id="val-pagong-x">2</span></label>
+    <input type="range" id="slider-pagong-x" min="-100" max="100" step="0.1" value="2" oninput="updateScene()">
+
+    <label>Y: <span class="value" id="val-pagong-y">2.9</span></label>
+    <input type="range" id="slider-pagong-y" min="-100" max="100" step="0.1" value="2.9" oninput="updateScene()">
+
+    <label>Z: <span class="value" id="val-pagong-z">-13.7</span></label>
+    <input type="range" id="slider-pagong-z" min="-100" max="100" step="0.1" value="-13.7" oninput="updateScene()">
+
+    <hr>
+    <label><b>🐇 Kuneho</b></label>
+    <label>Scale: <span class="value" id="val-kuneho-s">0.03</span></label>
+    <input type="range" id="slider-kuneho-s" min="0.001" max="10" step="0.001" value="0.03" oninput="updateScene()">
+
+    <label>X: <span class="value" id="val-kuneho-x">2.9</span></label>
+    <input type="range" id="slider-kuneho-x" min="-100" max="100" step="0.1" value="2.9" oninput="updateScene()">
+
+    <label>Y: <span class="value" id="val-kuneho-y">10.8</span></label>
+    <input type="range" id="slider-kuneho-y" min="-100" max="100" step="0.1" value="10.8" oninput="updateScene()">
+
+    <label>Z: <span class="value" id="val-kuneho-z">12.7</span></label>
+    <input type="range" id="slider-kuneho-z" min="-100" max="100" step="0.1" value="12.7" oninput="updateScene()">
+
+    <hr>
+    <label><b>📐 Scene</b></label>
+    <label>Height: <span class="value" id="val-height">0.2</span></label>
+    <input type="range" id="slider-height" min="-50" max="50" step="0.1" value="0.2" oninput="updateScene()">
+
+    <button onclick="copyValues()" style="margin-top:10px;width:100%;padding:8px;border:none;border-radius:6px;background:#667eea;color:white;font-size:0.75rem;cursor:pointer;">📋 Copy Values</button>
+    <p style="margin-top:6px;opacity:0.5;font-size:0.6rem;">Values match ar.html — copy & paste to sync</p>
+  </div>
+
+  <!-- ============================================ -->
+  <!--  3D SCENE (no AR, desktop-friendly)          -->
+  <!-- ============================================ -->
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false">
+
+    <!-- Assets -->
+    <a-assets>
+      <a-asset-item id="diorama-model" src="models/diorama.glb"></a-asset-item>
+      <a-asset-item id="turtle-model" src="models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model" src="models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- Ground plane for reference -->
+    <a-plane
+      position="0 0 0"
+      rotation="-90 0 0"
+      width="10"
+      height="10"
+      color="#2a3a2a"
+      shadow="receive: true">
+    </a-plane>
+
+    <!-- Grid helper (subtle) -->
+    <a-entity
+      position="0 0.01 0"
+      rotation="-90 0 0"
+      geometry="primitive: plane; width: 10; height: 10"
+      material="src: data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='none' stroke='%23ffffff20' stroke-width='1'/></svg>; repeat: 10 10; transparent: true">
+    </a-entity>
+
+    <!-- Diorama Scene (same structure as ar.html) -->
+    <a-entity
+      id="diorama-scene"
+      position="0 0.2 0"
+      scale="0.3 0.3 0.3"
+      rotation="0 -90 0">
+
+      <!-- DIORAMA BASE -->
+      <a-entity
+        id="diorama-base"
+        gltf-model="#diorama-model"
+        scale="2.696 2.696 2.696"
+        position="0 -42.2 0">
+      </a-entity>
+
+      <!-- TURTLE (Pagong) -->
+      <a-entity
+        id="pagong"
+        gltf-model="#turtle-model"
+        animation-mixer="clip: *; loop: repeat"
+        position="2 2.9 -13.7"
+        scale="1.2 1.2 1.2"
+        rotation="0 45 0">
+      </a-entity>
+
+      <!-- RABBIT (Kuneho) -->
+      <a-entity
+        id="kuneho"
+        gltf-model="#rabbit-model"
+        animation-mixer="clip: *; loop: repeat"
+        position="2.9 10.8 12.7"
+        scale="0.03 0.03 0.03"
+        rotation="0 -45 0">
+      </a-entity>
+
+    </a-entity>
+
+    <!-- Lighting -->
+    <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
+    <a-light type="directional" color="#ffeedd" intensity="0.8" position="2 4 1"></a-light>
+
+    <!-- Camera with orbit controls (mouse drag to rotate, scroll to zoom) -->
+    <a-entity
+      camera
+      position="0 2 4"
+      orbit-controls="target: 0 0.5 0; minDistance: 1; maxDistance: 20; initialPosition: 0 2 4; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    // Same update/copy functions as ar.html
+    function updateScene() {
+      const dioramaScale = parseFloat(document.getElementById('slider-diorama').value);
+      const dioramaY     = parseFloat(document.getElementById('slider-diorama-y').value);
+      const dioramaRot   = parseFloat(document.getElementById('slider-diorama-rot').value);
+      const dioramaTilt  = parseFloat(document.getElementById('slider-diorama-tilt').value);
+      const sceneH       = parseFloat(document.getElementById('slider-height').value);
+
+      const pagongS = parseFloat(document.getElementById('slider-pagong-s').value);
+      const pagongX = parseFloat(document.getElementById('slider-pagong-x').value);
+      const pagongY = parseFloat(document.getElementById('slider-pagong-y').value);
+      const pagongZ = parseFloat(document.getElementById('slider-pagong-z').value);
+
+      const kunehoS = parseFloat(document.getElementById('slider-kuneho-s').value);
+      const kunehoX = parseFloat(document.getElementById('slider-kuneho-x').value);
+      const kunehoY = parseFloat(document.getElementById('slider-kuneho-y').value);
+      const kunehoZ = parseFloat(document.getElementById('slider-kuneho-z').value);
+
+      // Update display values
+      document.getElementById('val-diorama').textContent = dioramaScale.toFixed(3);
+      document.getElementById('val-diorama-y').textContent = dioramaY.toFixed(2);
+      document.getElementById('val-diorama-rot').textContent = dioramaRot.toFixed(0);
+      document.getElementById('val-diorama-tilt').textContent = dioramaTilt.toFixed(0);
+      document.getElementById('val-height').textContent = sceneH.toFixed(2);
+
+      document.getElementById('val-pagong-s').textContent = pagongS.toFixed(3);
+      document.getElementById('val-pagong-x').textContent = pagongX.toFixed(2);
+      document.getElementById('val-pagong-y').textContent = pagongY.toFixed(2);
+      document.getElementById('val-pagong-z').textContent = pagongZ.toFixed(2);
+
+      document.getElementById('val-kuneho-s').textContent = kunehoS.toFixed(3);
+      document.getElementById('val-kuneho-x').textContent = kunehoX.toFixed(2);
+      document.getElementById('val-kuneho-y').textContent = kunehoY.toFixed(2);
+      document.getElementById('val-kuneho-z').textContent = kunehoZ.toFixed(2);
+
+      // Apply to scene
+      document.getElementById('diorama-scene').setAttribute('position', `0 ${sceneH} 0`);
+      document.getElementById('diorama-scene').setAttribute('rotation', `${dioramaTilt} ${dioramaRot} 0`);
+      document.getElementById('diorama-base').setAttribute('scale', `${dioramaScale} ${dioramaScale} ${dioramaScale}`);
+      document.getElementById('diorama-base').setAttribute('position', `0 ${dioramaY} 0`);
+
+      document.getElementById('pagong').setAttribute('scale', `${pagongS} ${pagongS} ${pagongS}`);
+      document.getElementById('pagong').setAttribute('position', `${pagongX} ${pagongY} ${pagongZ}`);
+
+      document.getElementById('kuneho').setAttribute('scale', `${kunehoS} ${kunehoS} ${kunehoS}`);
+      document.getElementById('kuneho').setAttribute('position', `${kunehoX} ${kunehoY} ${kunehoZ}`);
+    }
+
+    function copyValues() {
+      const vals = `Diorama: scale=${document.getElementById('slider-diorama').value}, y=${document.getElementById('slider-diorama-y').value}\n` +
+        `Pagong: scale=${document.getElementById('slider-pagong-s').value}, pos=(${document.getElementById('slider-pagong-x').value}, ${document.getElementById('slider-pagong-y').value}, ${document.getElementById('slider-pagong-z').value})\n` +
+        `Kuneho: scale=${document.getElementById('slider-kuneho-s').value}, pos=(${document.getElementById('slider-kuneho-x').value}, ${document.getElementById('slider-kuneho-y').value}, ${document.getElementById('slider-kuneho-z').value})\n` +
+        `Scene height: ${document.getElementById('slider-height').value}`;
+      navigator.clipboard.writeText(vals).then(() => alert('Values copied!'));
+    }
+  </script>
+
+</body>
+</html>
