@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Si Pagong at si Kuneho — AR Storybook</title>
+
+  <!-- A-Frame: 3D scene framework -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+  <!-- AR.js: marker-based AR -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+  <!-- aframe-extras: plays GLTF animations (walk, idle, run, etc.) -->
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.5.0/dist/aframe-extras.min.js"></script>
+
+  <!-- arjs-gestures: pinch-to-zoom, two-finger rotate -->
+  <script src="https://raw.githack.com/fcor/arjs-gestures/master/dist/gestures.js"></script>
+
+  <!-- Custom orbit-touch: one-finger drag for full rotation + tilt -->
+  <script>
+    AFRAME.registerComponent('orbit-touch', {
+      schema: {
+        sensitivity: { type: 'number', default: 0.4 },
+        target: { type: 'selector', default: null }
+      },
+      init: function () {
+        this.startX = 0;
+        this.startY = 0;
+        this.isOneFinger = false;
+
+        this.onTouchStart = this.onTouchStart.bind(this);
+        this.onTouchMove = this.onTouchMove.bind(this);
+        this.onTouchEnd = this.onTouchEnd.bind(this);
+
+        this.el.sceneEl.addEventListener('touchstart', this.onTouchStart);
+        this.el.sceneEl.addEventListener('touchmove', this.onTouchMove);
+        this.el.sceneEl.addEventListener('touchend', this.onTouchEnd);
+      },
+      onTouchStart: function (e) {
+        if (e.touches.length === 1) {
+          this.isOneFinger = true;
+          this.startX = e.touches[0].clientX;
+          this.startY = e.touches[0].clientY;
+        } else {
+          this.isOneFinger = false;
+        }
+      },
+      onTouchMove: function (e) {
+        if (!this.isOneFinger || e.touches.length !== 1) return;
+
+        const target = this.data.target || this.el;
+        const dx = e.touches[0].clientX - this.startX;
+        const dy = e.touches[0].clientY - this.startY;
+        const sens = this.data.sensitivity;
+
+        const rot = target.getAttribute('rotation');
+        rot.y += dx * sens;
+        rot.x -= dy * sens;
+        // Clamp tilt to avoid flipping
+        rot.x = Math.max(-90, Math.min(90, rot.x));
+        target.setAttribute('rotation', rot);
+
+        // Sync debug sliders if they exist
+        const rotSlider = document.getElementById('slider-diorama-rot');
+        const tiltSlider = document.getElementById('slider-diorama-tilt');
+        if (rotSlider) {
+          rotSlider.value = rot.y;
+          document.getElementById('val-diorama-rot').textContent = rot.y.toFixed(0);
+        }
+        if (tiltSlider) {
+          tiltSlider.value = rot.x;
+          document.getElementById('val-diorama-tilt').textContent = rot.x.toFixed(0);
+        }
+
+        this.startX = e.touches[0].clientX;
+        this.startY = e.touches[0].clientY;
+      },
+      onTouchEnd: function (e) {
+        if (e.touches.length === 0) this.isOneFinger = false;
+      }
+    });
+  </script>
+
+  <style>
+    /* Force AR scene to fit mobile viewport */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    a-scene {
+      position: fixed !important;
+      top: 0; left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+    }
+    a-scene video, a-scene canvas {
+      max-width: 100vw !important;
+      max-height: 100vh !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: #1a1a2e;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    #loading-overlay h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    #loading-overlay p {
+      font-size: 1rem;
+      opacity: 0.7;
+      margin-bottom: 2rem;
+    }
+    #start-btn {
+      padding: 16px 48px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+      transition: transform 0.2s;
+    }
+    #start-btn:active {
+      transform: scale(0.95);
+    }
+    /* Scan hint */
+    #scan-hint {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
+      z-index: 100;
+      pointer-events: none;
+      transition: opacity 0.5s;
+    }
+    /* Debug panel */
+    #debug-panel {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.85);
+      color: white;
+      padding: 12px;
+      border-radius: 12px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      z-index: 200;
+      width: 220px;
+      max-height: 70vh;
+      overflow-y: auto;
+      display: none;
+    }
+    #debug-panel hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      margin: 10px 0 4px;
+    }
+    #debug-panel label {
+      display: block;
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+    #debug-panel input[type=range] {
+      width: 100%;
+    }
+    #debug-panel .value {
+      float: right;
+      opacity: 0.7;
+    }
+    #toggle-debug {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 201;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: none;
+    }
+  </style>
+</head>
+
+<body style="margin: 0; overflow: hidden;">
+
+
+
+  <!-- Scan hint (shown after AR starts) -->
+  <div id="scan-hint" style="display: none;">
+    📷 Point your camera at the Hiro marker
+  </div>
+
+  <!-- Toggle debug button -->
+  <button id="toggle-debug" onclick="toggleDebug()">⚙️ Tweak</button>
+
+  <!-- Debug Panel for live adjustments -->
+  <div id="debug-panel">
+    <strong>🔧 Live Tweaks</strong>
+
+    <hr>
+    <label><b>🏝️ Diorama</b></label>
+    <label>Scale: <span class="value" id="val-diorama">0.15</span></label>
+    <input type="range" id="slider-diorama" min="0.005" max="5" step="0.005" value="0.15" oninput="updateScene()">
+
+    <label>Height (Y): <span class="value" id="val-diorama-y">0</span></label>
+    <input type="range" id="slider-diorama-y" min="-20" max="20" step="0.1" value="0" oninput="updateScene()">
+
+    <label>Rotation: <span class="value" id="val-diorama-rot">-90</span>°</label>
+    <input type="range" id="slider-diorama-rot" min="-180" max="180" step="5" value="-90" oninput="updateScene()">
+
+    <label>Tilt: <span class="value" id="val-diorama-tilt">0</span>°</label>
+    <input type="range" id="slider-diorama-tilt" min="-180" max="180" step="5" value="0" oninput="updateScene()">
+
+    <hr>
+    <label><b>🐢 Pagong</b></label>
+    <label>Scale: <span class="value" id="val-pagong-s">1.2</span></label>
+    <input type="range" id="slider-pagong-s" min="0.005" max="5" step="0.005" value="1.2" oninput="updateScene()">
+
+    <label>X: <span class="value" id="val-pagong-x">-0.15</span></label>
+    <input type="range" id="slider-pagong-x" min="-20" max="20" step="0.1" value="-0.15" oninput="updateScene()">
+
+    <label>Y: <span class="value" id="val-pagong-y">5.60</span></label>
+    <input type="range" id="slider-pagong-y" min="-20" max="20" step="0.1" value="5.60" oninput="updateScene()">
+
+    <label>Z: <span class="value" id="val-pagong-z">-20</span></label>
+    <input type="range" id="slider-pagong-z" min="-20" max="20" step="0.1" value="-20" oninput="updateScene()">
+
+    <hr>
+    <label><b>🐇 Kuneho</b></label>
+    <label>Scale: <span class="value" id="val-kuneho-s">0.03</span></label>
+    <input type="range" id="slider-kuneho-s" min="0.005" max="5" step="0.005" value="0.03" oninput="updateScene()">
+
+    <label>X: <span class="value" id="val-kuneho-x">0.15</span></label>
+    <input type="range" id="slider-kuneho-x" min="-20" max="20" step="0.1" value="0.15" oninput="updateScene()">
+
+    <label>Y: <span class="value" id="val-kuneho-y">11</span></label>
+    <input type="range" id="slider-kuneho-y" min="-20" max="20" step="0.1" value="11" oninput="updateScene()">
+
+    <label>Z: <span class="value" id="val-kuneho-z">5.90</span></label>
+    <input type="range" id="slider-kuneho-z" min="-20" max="20" step="0.1" value="5.90" oninput="updateScene()">
+
+    <hr>
+    <label><b>📐 Scene</b></label>
+    <label>Height: <span class="value" id="val-height">0.2</span></label>
+    <input type="range" id="slider-height" min="0" max="20" step="0.1" value="0.2" oninput="updateScene()">
+
+    <button onclick="copyValues()" style="margin-top:10px;width:100%;padding:8px;border:none;border-radius:6px;background:#667eea;color:white;font-size:0.75rem;cursor:pointer;">📋 Copy Values</button>
+    <p style="margin-top:6px;opacity:0.5;font-size:0.6rem;">Pinch to zoom & two-finger rotate also work</p>
+  </div>
+
+  <!-- ============================================ -->
+  <!--  AR SCENE                                     -->
+  <!-- ============================================ -->
+  <a-scene
+    embedded
+    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    gesture-detector
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false">
+
+    <!-- ==================== -->
+    <!--  ASSETS (preload)    -->
+    <!-- ==================== -->
+    <a-assets>
+      <!-- 
+        INSTRUCTIONS: Replace these with your actual model files.
+        Put your .glb files in the /models folder and make sure 
+        the filenames match exactly.
+      -->
+      <a-asset-item id="diorama-model" src="models/diorama.glb"></a-asset-item>
+      <a-asset-item id="turtle-model" src="models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model" src="models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- ==================== -->
+    <!--  HIRO MARKER         -->
+    <!-- ==================== -->
+    <!--
+      Using the built-in Hiro marker for prototype.
+      Later, replace with: type="pattern" url="markers/page1.patt"
+    -->
+    <a-marker type="pattern" url="markers/story-marker.patt" id="marker-main">
+
+      <!-- 
+        DIORAMA PARENT ENTITY
+        - Everything is grouped under this entity
+        - position y=0.3 lifts the whole scene above the marker
+        - gesture-handler lets you pinch-zoom and rotate the entire diorama
+      -->
+      <a-entity
+        id="diorama-scene"
+        position="0 0.2 0"
+        scale="0.3 0.3 0.3"
+        rotation="0 -90 0"
+        class="clickable"
+        gesture-handler="minScale: 0.05; maxScale: 5; rotationFactor: 5"
+        orbit-touch="sensitivity: 0.4; target: #diorama-scene">
+
+        <!-- DIORAMA BASE (forest/island environment) -->
+        <a-entity
+          id="diorama-base"
+          gltf-model="#diorama-model"
+          scale="0.15 0.15 0.15"
+          position="0 0 0">
+        </a-entity>
+
+        <!-- TURTLE (Pagong) -->
+        <a-entity
+          id="pagong"
+          gltf-model="#turtle-model"
+          animation-mixer="clip: *; loop: repeat"
+          position="-0.15 5.60 -20"
+          scale="1.2 1.2 1.2"
+          rotation="0 45 0">
+        </a-entity>
+
+        <!-- RABBIT (Kuneho) -->
+        <a-entity
+          id="kuneho"
+          gltf-model="#rabbit-model"
+          animation-mixer="clip: *; loop: repeat"
+          position="0.15 11 5.90"
+          scale="0.03 0.03 0.03"
+          rotation="0 -45 0">
+        </a-entity>
+
+      </a-entity>
+      <!-- END diorama-scene -->
+
+    </a-marker>
+
+    <!-- Camera -->
+    <a-entity camera></a-entity>
+
+  </a-scene>
+
+  <script>
+    // AR launches immediately — no loading overlay needed (landing.html handles that)
+    document.getElementById('scan-hint').style.display = 'block';
+    document.getElementById('toggle-debug').style.display = 'block';
+
+    // ===========================
+    // Debug panel toggle
+    // ===========================
+    function toggleDebug() {
+      const panel = document.getElementById('debug-panel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ===========================
+    // Live scene updates from sliders
+    // ===========================
+    function updateScene() {
+      // Read all slider values
+      const dioramaScale = parseFloat(document.getElementById('slider-diorama').value);
+      const dioramaY     = parseFloat(document.getElementById('slider-diorama-y').value);
+      const dioramaRot   = parseFloat(document.getElementById('slider-diorama-rot').value);
+      const dioramaTilt  = parseFloat(document.getElementById('slider-diorama-tilt').value);
+      const sceneH       = parseFloat(document.getElementById('slider-height').value);
+
+      const pagongS = parseFloat(document.getElementById('slider-pagong-s').value);
+      const pagongX = parseFloat(document.getElementById('slider-pagong-x').value);
+      const pagongY = parseFloat(document.getElementById('slider-pagong-y').value);
+      const pagongZ = parseFloat(document.getElementById('slider-pagong-z').value);
+
+      const kunehoS = parseFloat(document.getElementById('slider-kuneho-s').value);
+      const kunehoX = parseFloat(document.getElementById('slider-kuneho-x').value);
+      const kunehoY = parseFloat(document.getElementById('slider-kuneho-y').value);
+      const kunehoZ = parseFloat(document.getElementById('slider-kuneho-z').value);
+
+      // Update display values
+      document.getElementById('val-diorama').textContent = dioramaScale.toFixed(3);
+      document.getElementById('val-diorama-y').textContent = dioramaY.toFixed(2);
+      document.getElementById('val-diorama-rot').textContent = dioramaRot.toFixed(0);
+      document.getElementById('val-diorama-tilt').textContent = dioramaTilt.toFixed(0);
+      document.getElementById('val-height').textContent = sceneH.toFixed(2);
+
+      document.getElementById('val-pagong-s').textContent = pagongS.toFixed(3);
+      document.getElementById('val-pagong-x').textContent = pagongX.toFixed(2);
+      document.getElementById('val-pagong-y').textContent = pagongY.toFixed(2);
+      document.getElementById('val-pagong-z').textContent = pagongZ.toFixed(2);
+
+      document.getElementById('val-kuneho-s').textContent = kunehoS.toFixed(3);
+      document.getElementById('val-kuneho-x').textContent = kunehoX.toFixed(2);
+      document.getElementById('val-kuneho-y').textContent = kunehoY.toFixed(2);
+      document.getElementById('val-kuneho-z').textContent = kunehoZ.toFixed(2);
+
+      // Apply to scene
+      document.getElementById('diorama-scene').setAttribute('position', `0 ${sceneH} 0`);
+      document.getElementById('diorama-scene').setAttribute('rotation', `${dioramaTilt} ${dioramaRot} 0`);
+      document.getElementById('diorama-base').setAttribute('scale', `${dioramaScale} ${dioramaScale} ${dioramaScale}`);
+      document.getElementById('diorama-base').setAttribute('position', `0 ${dioramaY} 0`);
+
+      document.getElementById('pagong').setAttribute('scale', `${pagongS} ${pagongS} ${pagongS}`);
+      document.getElementById('pagong').setAttribute('position', `${pagongX} ${pagongY} ${pagongZ}`);
+
+      document.getElementById('kuneho').setAttribute('scale', `${kunehoS} ${kunehoS} ${kunehoS}`);
+      document.getElementById('kuneho').setAttribute('position', `${kunehoX} ${kunehoY} ${kunehoZ}`);
+    }
+
+    // ===========================
+    // Copy current values to clipboard
+    // ===========================
+    function copyValues() {
+      const vals = `Diorama: scale=${document.getElementById('slider-diorama').value}, y=${document.getElementById('slider-diorama-y').value}\n` +
+        `Pagong: scale=${document.getElementById('slider-pagong-s').value}, pos=(${document.getElementById('slider-pagong-x').value}, ${document.getElementById('slider-pagong-y').value}, ${document.getElementById('slider-pagong-z').value})\n` +
+        `Kuneho: scale=${document.getElementById('slider-kuneho-s').value}, pos=(${document.getElementById('slider-kuneho-x').value}, ${document.getElementById('slider-kuneho-y').value}, ${document.getElementById('slider-kuneho-z').value})\n` +
+        `Scene height: ${document.getElementById('slider-height').value}`;
+      navigator.clipboard.writeText(vals).then(() => alert('Values copied!'));
+    }
+
+    // ===========================
+    // Marker found/lost events
+    // ===========================
+    const marker = document.querySelector('#marker-main');
+
+    marker.addEventListener('markerFound', () => {
+      console.log('✅ Marker detected!');
+      document.getElementById('scan-hint').style.opacity = '0';
+    });
+
+    marker.addEventListener('markerLost', () => {
+      console.log('❌ Marker lost');
+      document.getElementById('scan-hint').style.opacity = '1';
+    });
+  </script>
+
+</body>
+</html>

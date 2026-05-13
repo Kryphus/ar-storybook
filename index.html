@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Si Pagong at si Kuneho — AR Storybook</title>
+  <meta name="description"
+    content="An augmented reality storybook experience of the classic Filipino fable, Si Pagong at si Kuneho. Scan the pages and watch the story come to life in 3D voxel art!">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="landing.css">
+</head>
+
+<body>
+  <div class="landing-page">
+
+    <!-- Music Toggle -->
+    <button class="music-toggle" id="music-toggle" aria-label="Toggle background music">
+      <span class="music-icon">♫</span>
+    </button>
+    <audio id="bg-music" loop preload="auto">
+      <source src="assets/audio/bgmusic.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Background Hero Image -->
+    <div class="bg-hero">
+      <img src="assets/images/bghero.png" alt="Voxel forest scene with turtle and rabbit at the starting line"
+        id="bg-hero-img">
+    </div>
+
+    <!-- Floating Particles -->
+    <div class="particles">
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+      <div class="particle"></div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+
+      <!-- Title Logo -->
+      <div class="title-container fade-in">
+        <img src="assets/images/titletext.png" alt="Si Pagong at si Kuneho">
+      </div>
+
+      <!-- Subtitle -->
+      <p class="subtitle fade-in fade-in-delay-1">
+        <span class="sparkle"></span> AR Storybook Adventure <span class="sparkle"></span>
+      </p>
+
+      <!-- Start Button -->
+      <div class="start-btn-container fade-in fade-in-delay-2" id="start-btn" onclick="startAR()" role="button"
+        tabindex="0" aria-label="Start AR Camera">
+        <img src="assets/images/woodenbanner.png" alt="">
+        <span class="start-btn-text">▶ Start</span>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer-credits fade-in fade-in-delay-3">
+      Kryp — AR Storybook © 2026
+    </div>
+
+  </div>
+
+  <script>
+    // Start AR — navigates to the actual AR page
+    function startAR() {
+      const btn = document.getElementById('start-btn');
+      btn.classList.add('clicked');
+      // Small delay so the click animation plays before navigating
+      setTimeout(() => {
+        window.location.href = 'pages.html';
+      }, 400);
+    }
+
+    // Allow keyboard activation of the start button
+    document.getElementById('start-btn').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        startAR();
+      }
+    });
+
+    // Music — shared controller
+  </script>
+  <script src="music.js"></script>
+
+</body>
+
+</html>

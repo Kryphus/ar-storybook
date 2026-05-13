@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pages — Si Pagong at si Kuneho</title>
+  <meta name="description"
+    content="Choose a page from Si Pagong at si Kuneho. An AR Storybook with voxel art.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="pages.css">
+</head>
+
+<body>
+  <div class="pages-screen">
+
+    <!-- Music Toggle -->
+    <button class="music-toggle" id="music-toggle" aria-label="Toggle background music">
+      <span class="music-icon">♫</span>
+    </button>
+    <audio id="bg-music" loop preload="auto">
+      <source src="assets/audio/bgmusic.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Background (reuse the hero) -->
+    <div class="bg-hero">
+      <img src="assets/images/bghero.png" alt="">
+    </div>
+
+    <!-- Header -->
+    <header class="page-header fade-in">
+      <button class="back-btn" id="back-btn" onclick="window.location.href='index.html'" aria-label="Back">
+        ← Back
+      </button>
+      <h1 class="page-title">📖 Pages</h1>
+    </header>
+
+    <!-- Start from Beginning Button -->
+    <div class="start-beginning fade-in fade-in-delay-1">
+      <button class="start-btn" id="start-beginning-btn" onclick="goToAR()">
+        ▶ Start from Beginning
+      </button>
+    </div>
+
+    <!-- Page Grid -->
+    <div class="page-grid fade-in fade-in-delay-2">
+
+      <div class="page-card" onclick="goToAR(1)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page1.jpg" alt="Pahina 1">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 1</span>
+          <span class="page-label">Ang Simula</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(2)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page2.jpg" alt="Pahina 2">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 2</span>
+          <span class="page-label">Ang Pagmamayabang</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(3)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page3.jpg" alt="Pahina 3">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 3</span>
+          <span class="page-label">Ang Hamon</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(4)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page4.jpg" alt="Pahina 4">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 4</span>
+          <span class="page-label">Ang Karera</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(5)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page5.jpg" alt="Pahina 5">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 5</span>
+          <span class="page-label">Ang Pagmamalaki</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(6)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page6.jpg" alt="Pahina 6">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 6</span>
+          <span class="page-label">Ang Pagtulog</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(7)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page7.jpg" alt="Pahina 7">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 7</span>
+          <span class="page-label">Ang Tiyaga</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(8)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page8.jpg" alt="Pahina 8">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 8</span>
+          <span class="page-label">Ang Pagkagulat</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(9)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page9.jpg" alt="Pahina 9">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 9</span>
+          <span class="page-label">Ang Tagumpay</span>
+        </div>
+      </div>
+
+      <div class="page-card" onclick="goToAR(10)">
+        <div class="page-thumb">
+          <img src="assets/images/markers/page10.jpg" alt="Pahina 10">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina 10</span>
+          <span class="page-label">Ang Aral</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    function goToAR(page) {
+      // Navigate to AR — optionally pass page number for future use
+      if (page) {
+        window.location.href = `ar.html?page=${page}`;
+      } else {
+        window.location.href = 'ar.html?page=1';
+      }
+    }
+  </script>
+  <script src="music.js"></script>
+
+</body>
+
+</html>
