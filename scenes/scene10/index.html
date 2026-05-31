@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pahina 10: Ang Aral - Si Pagong at si Kuneho</title>
+  <meta name="description" content="Scene 10: Ang Aral. Si Pagong at si Kuneho AR Storybook.">
+
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.5.0/dist/aframe-extras.min.js"></script>
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+    }
+
+    #scene-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      height: 52px;
+      background: rgba(10, 10, 26, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: scale(1.04);
+    }
+
+    .nav-btn:active { transform: scale(0.97); }
+
+    .nav-btn.ar-btn {
+      border-color: rgba(118, 75, 162, 0.6);
+      background: rgba(102, 126, 234, 0.15);
+      color: #c4b5f4;
+    }
+
+    .nav-btn.ar-btn:hover {
+      background: rgba(102, 126, 234, 0.28);
+      border-color: rgba(118, 75, 162, 0.9);
+    }
+
+    #scene-title {
+      color: white;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    #scene-title small {
+      display: block;
+      font-size: 0.68rem;
+      opacity: 0.55;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    #orbit-hint {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.68rem;
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.5s;
+    }
+
+    #anim-btn {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      border-radius: 50px;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+    }
+
+    #anim-btn:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.75);
+    }
+
+    #anim-btn:active { transform: translateX(-50%) scale(0.97); }
+
+    #anim-btn.playing {
+      background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
+      box-shadow: 0 4px 20px rgba(240, 84, 84, 0.45);
+    }
+
+    #anim-btn.playing:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(240, 84, 84, 0.7);
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav id="scene-nav">
+    <a href="../../pages.html" class="nav-btn">&larr; Pages</a>
+    <div id="scene-title">
+      Pahina 10
+      <small>Ang Aral</small>
+    </div>
+    <a href="./ar.html" class="nav-btn ar-btn">AR</a>
+  </nav>
+
+  <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; Play Scene 10</button>
+  <audio id="narration" src="../../assets/audio/scene10.mp3" preload="auto"></audio>
+  <p id="orbit-hint">Drag to orbit &nbsp;&middot;&nbsp; Scroll to zoom</p>
+
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false">
+
+    <a-assets>
+      <a-asset-item id="diorama-model" src="./diorama.glb"></a-asset-item>
+      <a-asset-item id="turtle-model" src="../../models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model" src="../../models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <a-plane position="0 0 0" rotation="-90 0 0" width="10" height="10"
+      color="#2a3a2a" shadow="receive: true"></a-plane>
+
+    <a-entity position="0 0.01 0" rotation="-90 0 0"
+      geometry="primitive: plane; width: 10; height: 10"
+      material="src: data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='none' stroke='%23ffffff20' stroke-width='1'/></svg>; repeat: 10 10; transparent: true">
+    </a-entity>
+
+    <a-entity id="diorama-scene" position="0 0.2 0" scale="0.3 0.3 0.3" rotation="0 0 0">
+
+      <a-entity id="diorama-base"
+        gltf-model="#diorama-model"
+        scale="2.696 2.696 2.696"
+        position="0 -4.0 0">
+      </a-entity>
+
+      <a-entity id="pagong"
+        gltf-model="#turtle-model"
+        position="-6 3 15.8"
+        scale="0.5 0.5 0.5"
+        rotation="0 85 0">
+      </a-entity>
+
+      <a-entity id="kuneho"
+        gltf-model="#rabbit-model"
+        position="6 5 16.9"
+        scale="0.01 0.01 0.01"
+        rotation="0 90 0">
+      </a-entity>
+
+    </a-entity>
+
+    <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
+    <a-light type="directional" color="#ffeedd" intensity="0.8" position="2 4 1"></a-light>
+
+    <a-entity camera position="0 2 4"
+      orbit-controls="target: 0 0.5 0; minDistance: 1; maxDistance: 20; initialPosition: 0 2 4; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    const T_K_TALK_END = 3000;
+    const T_P_TALK_END = 6000;
+    const T_DONE = 10000;
+    const TALK_FREQ = 6.0;
+    const TALK_H = 0.6;
+    const HAPPY_JUMP_H = 1.2;
+    const P_JUMP_FREQ = 2.4;
+    const K_JUMP_FREQ = 2.7;
+    const K_JUMP_OFFSET = 0.45;
+
+    const P_POSE = { x: -6, y: 3, z: 15.8, rot: 85 };
+    const K_POSE = { x: 6, y: 5, z: 16.9, rot: 90 };
+
+    let animRunning = false;
+    let animFinished = false;
+    let animStart = null;
+    let animFrameId = null;
+
+    function scene10Tick(timestamp) {
+      if (!animStart) animStart = timestamp;
+      const elapsed = timestamp - animStart;
+
+      const pagong = document.getElementById('pagong');
+      const kuneho = document.getElementById('kuneho');
+
+      if (elapsed < T_K_TALK_END) {
+        const bounce = Math.max(0, Math.sin(elapsed / 1000 * TALK_FREQ * Math.PI)) * TALK_H;
+        pagong.setAttribute('position', `${P_POSE.x} ${P_POSE.y} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position',
+          `${K_POSE.x} ${(K_POSE.y + bounce).toFixed(3)} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else if (elapsed < T_P_TALK_END) {
+        const localElapsed = elapsed - T_K_TALK_END;
+        const bounce = Math.max(0, Math.sin(localElapsed / 1000 * TALK_FREQ * Math.PI)) * TALK_H;
+        pagong.setAttribute('position',
+          `${P_POSE.x} ${(P_POSE.y + bounce).toFixed(3)} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position', `${K_POSE.x} ${K_POSE.y} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else if (elapsed < T_DONE) {
+        const localElapsed = elapsed - T_P_TALK_END;
+        const pJump = Math.abs(Math.sin(localElapsed / 1000 * P_JUMP_FREQ * Math.PI)) * HAPPY_JUMP_H;
+        const kJump = Math.abs(Math.sin((localElapsed / 1000 * K_JUMP_FREQ + K_JUMP_OFFSET) * Math.PI)) * HAPPY_JUMP_H;
+        pagong.setAttribute('position',
+          `${P_POSE.x} ${(P_POSE.y + pJump).toFixed(3)} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position',
+          `${K_POSE.x} ${(K_POSE.y + kJump).toFixed(3)} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else {
+        resetToStart();
+      }
+
+      if (elapsed >= T_DONE) {
+        finishAnimation();
+        return;
+      }
+
+      if (animRunning) animFrameId = requestAnimationFrame(scene10Tick);
+    }
+
+    function handleAnimBtn() {
+      if (animRunning) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    }
+
+    function startAnimation() {
+      if (animRunning) return;
+      if (animFinished) resetToStart();
+
+      animRunning = true;
+      animFinished = false;
+      animStart = null;
+      playNarration();
+      resetToStart();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.add('playing');
+      btn.innerHTML = '&#9646; &nbsp; Stop';
+
+      animFrameId = requestAnimationFrame(scene10Tick);
+      document.getElementById('orbit-hint').style.opacity = '0';
+    }
+
+    function finishAnimation() {
+      animRunning = true;
+      animFinished = true;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      resetToStart();
+
+      if (document.getElementById('narration').ended) stopAnimation();
+    }
+
+    function resetToStart() {
+      document.getElementById('pagong').setAttribute('position',
+        `${P_POSE.x} ${P_POSE.y} ${P_POSE.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${P_POSE.rot} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${K_POSE.x} ${K_POSE.y} ${K_POSE.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${K_POSE.rot} 0`);
+    }
+
+    function stopAnimation() {
+      animRunning = false;
+      animFinished = false;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+      stopNarration();
+
+      resetToStart();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#9654; &nbsp; Play Scene 10';
+      document.getElementById('orbit-hint').style.opacity = '1';
+    }
+
+    function playNarration() {
+      const narration = document.getElementById('narration');
+      narration.currentTime = 0;
+      narration.play().catch(() => {});
+    }
+
+    function stopNarration() {
+      const narration = document.getElementById('narration');
+      narration.pause();
+      narration.currentTime = 0;
+    }
+
+    document.getElementById('narration').addEventListener('ended', stopAnimation);
+  </script>
+
+</body>
+
+</html>

@@ -14,6 +14,28 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
     rel="stylesheet">
+  <link rel="preload" href="assets/images/markers/targets-scene1.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene2.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene3.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene4.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene5.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene6.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene7.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene8.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene9.mind" as="fetch" crossorigin>
+  <link rel="preload" href="assets/images/markers/targets-scene10.mind" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene1/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene2/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene3/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene4/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene5/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene6/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene7/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene8/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene9/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="scenes/scene10/diorama.glb" as="fetch" crossorigin>
+  <link rel="preload" href="models/turtle.glb" as="fetch" crossorigin>
+  <link rel="preload" href="models/rabbit.glb" as="fetch" crossorigin>
 
   <link rel="stylesheet" href="pages.css">
 </head>
@@ -157,12 +179,67 @@
   </div>
 
   <script>
+    const preloadFiles = [
+      'assets/images/markers/targets-scene1.mind',
+      'assets/images/markers/targets-scene2.mind',
+      'assets/images/markers/targets-scene3.mind',
+      'assets/images/markers/targets-scene4.mind',
+      'assets/images/markers/targets-scene5.mind',
+      'assets/images/markers/targets-scene6.mind',
+      'assets/images/markers/targets-scene7.mind',
+      'assets/images/markers/targets-scene8.mind',
+      'assets/images/markers/targets-scene9.mind',
+      'assets/images/markers/targets-scene10.mind',
+      'scenes/scene1/diorama.glb',
+      'scenes/scene2/diorama.glb',
+      'scenes/scene3/diorama.glb',
+      'scenes/scene4/diorama.glb',
+      'scenes/scene5/diorama.glb',
+      'scenes/scene6/diorama.glb',
+      'scenes/scene7/diorama.glb',
+      'scenes/scene8/diorama.glb',
+      'scenes/scene9/diorama.glb',
+      'scenes/scene10/diorama.glb',
+      'models/turtle.glb',
+      'models/rabbit.glb',
+      'assets/audio/scene1.mp3',
+      'assets/audio/scene2.mp3',
+      'assets/audio/scene3.mp3',
+      'assets/audio/scene4.mp3',
+      'assets/audio/scene5.mp3',
+      'assets/audio/scene6.mp3',
+      'assets/audio/scene7.mp3',
+      'assets/audio/scene8.mp3',
+      'assets/audio/scene9.mp3',
+      'assets/audio/scene10.mp3',
+      'assets/audio/animal_crowd_yay.mp3'
+    ];
+
+    function warmARCache() {
+      preloadFiles.forEach((url) => {
+        fetch(url, { cache: 'force-cache' }).catch(() => {
+          // The AR page still performs its own loading and error reporting.
+        });
+      });
+    }
+
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(warmARCache);
+    } else {
+      setTimeout(warmARCache, 800);
+    }
+
     function goToAR(page) {
-      // Navigate to AR — optionally pass page number for future use
-      if (page) {
-        window.location.href = `ar.html?page=${page}`;
+      const p = page || 1;
+      // AR viewers live at scenes/sceneN/ar.html
+      // Scenes without an AR file yet fall back to the preview viewer
+      const arReady = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; // Add scene numbers here as AR is built.
+      if (arReady.includes(p)) {
+        window.location.href = `scenes/scene${p}/ar.html`;
       } else {
-        window.location.href = 'ar.html?page=1';
+        // AR not built yet for this scene — open preview instead
+        alert(`AR for Pahina ${p} is coming soon! Opening the 3D preview instead.`);
+        window.location.href = `scenes/scene${p}/index.html`;
       }
     }
   </script>

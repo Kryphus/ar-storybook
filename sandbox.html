@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Force fresh JS on every load — prevents stale cached code with mismatched storage keys -->
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>Sandbox — Si Pagong at si Kuneho</title>
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+  <!-- aframe-extras: plays GLTF animations -->
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.5.0/dist/aframe-extras.min.js"></script>
+
+  <!-- Orbit controls for desktop mouse interaction -->
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+    }
+
+    /* Info bar */
+    #info-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    #info-bar .title {
+      font-weight: 600;
+    }
+
+    #info-bar .hint {
+      opacity: 0.6;
+      font-size: 0.75rem;
+    }
+
+    /* Debug panel */
+    #debug-panel {
+      position: fixed;
+      top: 50px;
+      right: 10px;
+      background: rgba(0, 0, 0, 0.85);
+      color: white;
+      padding: 12px;
+      border-radius: 12px;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.75rem;
+      z-index: 200;
+      width: 220px;
+      max-height: calc(100vh - 70px);
+      overflow-y: auto;
+    }
+
+    #debug-panel hr {
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      margin: 10px 0 4px;
+    }
+
+    #debug-panel label {
+      display: block;
+      margin-top: 8px;
+      margin-bottom: 2px;
+    }
+
+    #debug-panel input[type=range] {
+      width: 100%;
+    }
+
+    #debug-panel .value {
+      float: right;
+      opacity: 0.7;
+      cursor: pointer;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.28);
+      transition: opacity 0.15s, border-color 0.15s;
+    }
+
+    #debug-panel .value:hover {
+      opacity: 1;
+      border-bottom-color: rgba(255, 255, 255, 0.7);
+    }
+
+    #debug-panel .value-input {
+      width: 64px;
+      float: right;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      border-radius: 4px;
+      color: white;
+      padding: 1px 5px;
+      font-size: 0.75rem;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+
+    #debug-panel .value-input::-webkit-inner-spin-button,
+    #debug-panel .value-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+    }
+
+    /* ===================== ANIM BUTTON (bottom) ===================== */
+    #anim-btn {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      border-radius: 50px;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease, opacity 0.2s ease;
+    }
+
+    #anim-btn:hover:not(:disabled) {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.75);
+    }
+
+    #anim-btn:active:not(:disabled) {
+      transform: translateX(-50%) scale(0.97);
+    }
+
+    /* While animation is running — red Stop style, still clickable */
+    #anim-btn.playing {
+      background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
+      box-shadow: 0 4px 20px rgba(240, 84, 84, 0.45);
+      cursor: pointer;
+      opacity: 1;
+    }
+
+    #anim-btn.playing:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(240, 84, 84, 0.7);
+    }
+
+    /* ===================== DIORAMA SWITCHER ===================== */
+    #diorama-switcher {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    #diorama-switcher input {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      color: white;
+      padding: 4px 6px;
+      font-size: 0.7rem;
+      outline: none;
+    }
+
+    #diorama-switcher button {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      color: rgba(255, 255, 255, 0.8);
+      padding: 4px 8px;
+      font-size: 0.65rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #diorama-switcher button:hover {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    #current-model-name {
+      font-size: 0.7rem;
+      opacity: 0.55;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- PERSISTENT PLAY / REPLAY BUTTON -->
+  <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; Play Scene 10</button>
+
+  <!-- Info Bar -->
+  <div id="info-bar">
+    <span class="title">🔧 Sandbox Mode</span>
+    <span class="hint">Drag to orbit · Scroll to zoom · Right-click to pan</span>
+  </div>
+
+  <!-- Debug Panel (always visible in preview) -->
+  <div id="debug-panel">
+    <strong>🔧 Live Tweaks</strong>
+
+    <hr>
+    <label><b>🏝️ Diorama</b></label>
+    <p id="current-model-name">📦 diorama.glb</p>
+    <div id="diorama-switcher">
+      <input type="text" id="diorama-filename" placeholder="e.g. diorama-scene2.glb">
+      <button onclick="switchDiorama()">Load</button>
+    </div>
+    <label>Scale: <span class="value" id="val-diorama">2.696</span></label>
+    <input type="range" id="slider-diorama" min="0.001" max="50" step="0.005" value="2.696" oninput="updateScene()">
+
+    <label>Height (Y): <span class="value" id="val-diorama-y">-4.0</span></label>
+    <input type="range" id="slider-diorama-y" min="-100" max="100" step="0.1" value="-4.0" oninput="updateScene()">
+
+    <label>Rotation: <span class="value" id="val-diorama-rot">0</span>°</label>
+    <input type="range" id="slider-diorama-rot" min="-180" max="180" step="5" value="0" oninput="updateScene()">
+
+    <label>Tilt: <span class="value" id="val-diorama-tilt">0</span>°</label>
+    <input type="range" id="slider-diorama-tilt" min="-180" max="180" step="5" value="0" oninput="updateScene()">
+
+    <hr>
+    <label><b>🐢 Pagong</b></label>
+    <label>Scale: <span class="value" id="val-pagong-s">0.500</span></label>
+    <input type="range" id="slider-pagong-s" min="0.001" max="10" step="0.001" value="0.5" oninput="updateScene()">
+
+    <label>X: <span class="value" id="val-pagong-x">-6.00</span></label>
+    <input type="range" id="slider-pagong-x" min="-100" max="100" step="0.1" value="-6" oninput="updateScene()">
+
+    <label>Y: <span class="value" id="val-pagong-y">3.00</span></label>
+    <input type="range" id="slider-pagong-y" min="-100" max="100" step="0.1" value="3" oninput="updateScene()">
+
+    <label>Z: <span class="value" id="val-pagong-z">15.80</span></label>
+    <input type="range" id="slider-pagong-z" min="-100" max="100" step="0.1" value="15.8" oninput="updateScene()">
+
+    <label>Rotation: <span class="value" id="val-pagong-rot">85</span>°</label>
+    <input type="range" id="slider-pagong-rot" min="-180" max="180" step="5" value="85" oninput="updateScene()">
+
+    <hr>
+    <label><b>🐇 Kuneho</b></label>
+    <label>Scale: <span class="value" id="val-kuneho-s">0.010</span></label>
+    <input type="range" id="slider-kuneho-s" min="0.001" max="10" step="0.001" value="0.01" oninput="updateScene()">
+
+    <label>X: <span class="value" id="val-kuneho-x">6.00</span></label>
+    <input type="range" id="slider-kuneho-x" min="-100" max="100" step="0.1" value="6" oninput="updateScene()">
+
+    <label>Y: <span class="value" id="val-kuneho-y">5.00</span></label>
+    <input type="range" id="slider-kuneho-y" min="-100" max="100" step="0.1" value="5" oninput="updateScene()">
+
+    <label>Z: <span class="value" id="val-kuneho-z">16.90</span></label>
+    <input type="range" id="slider-kuneho-z" min="-100" max="100" step="0.1" value="16.9" oninput="updateScene()">
+
+    <label>Rotation: <span class="value" id="val-kuneho-rot">90</span>°</label>
+    <input type="range" id="slider-kuneho-rot" min="-180" max="180" step="5" value="90" oninput="updateScene()">
+
+    <hr>
+    <label><b>📐 Scene</b></label>
+    <label>Height: <span class="value" id="val-height">0.2</span></label>
+    <input type="range" id="slider-height" min="-50" max="50" step="0.1" value="0.2" oninput="updateScene()">
+
+
+    <button onclick="copyValues()"
+      style="margin-top:10px;width:100%;padding:8px;border:none;border-radius:6px;background:#667eea;color:white;font-size:0.75rem;cursor:pointer;">📋
+      Copy Values</button>
+    <button onclick="resetDefaults()"
+      style="margin-top:6px;width:100%;padding:8px;border:none;border-radius:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.7);font-size:0.75rem;cursor:pointer;">↺ Reset to Defaults</button>
+    <p style="margin-top:6px;opacity:0.5;font-size:0.6rem;">Values match ar.html — copy &amp; paste to sync</p>
+  </div>
+
+  <!-- ============================================ -->
+  <!--  3D SCENE (no AR, desktop-friendly)          -->
+  <!-- ============================================ -->
+  <!-- Read ?d= param BEFORE A-Frame loads -->
+  <script>
+    const DIORAMA_FILE = new URLSearchParams(location.search).get('d') || 'diorama-scene2.glb';
+  </script>
+
+  <a-scene embedded vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false">
+
+    <!-- Assets — diorama src is set dynamically after page load -->
+    <a-assets>
+      <a-asset-item id="diorama-model" src=""></a-asset-item>
+      <a-asset-item id="turtle-model" src="models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model" src="models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- Ground plane for reference -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="10" height="10" color="#2a3a2a" shadow="receive: true">
+    </a-plane>
+
+    <!-- Grid helper (subtle) -->
+    <a-entity position="0 0.01 0" rotation="-90 0 0" geometry="primitive: plane; width: 10; height: 10"
+      material="src: data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='none' stroke='%23ffffff20' stroke-width='1'/></svg>; repeat: 10 10; transparent: true">
+    </a-entity>
+
+    <!-- Diorama Scene (same structure as ar.html) -->
+    <a-entity id="diorama-scene" position="0 0.2 0" scale="0.3 0.3 0.3" rotation="0 0 0">
+
+      <!-- DIORAMA BASE -->
+      <a-entity id="diorama-base" gltf-model="#diorama-model" scale="2.696 2.696 2.696" position="0 -4.0 0">
+      </a-entity>
+
+      <!-- TURTLE (Pagong) -->
+      <a-entity id="pagong" gltf-model="#turtle-model" position="-6 3 15.8" scale="0.5 0.5 0.5" rotation="0 85 0">
+      </a-entity>
+
+      <!-- RABBIT (Kuneho) -->
+      <a-entity id="kuneho" gltf-model="#rabbit-model" position="6 5 16.9" scale="0.01 0.01 0.01"
+        rotation="0 90 0">
+      </a-entity>
+
+    </a-entity>
+
+    <!-- Lighting -->
+    <a-light type="ambient" color="#ffffff" intensity="0.6"></a-light>
+    <a-light type="directional" color="#ffeedd" intensity="0.8" position="2 4 1"></a-light>
+
+    <!-- Camera with orbit controls -->
+    <a-entity camera position="0 2 4"
+      orbit-controls="target: 0 0.5 0; minDistance: 1; maxDistance: 20; initialPosition: 0 2 4; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    // ============================================================
+    //  DIORAMA SWITCHER — load model from ?d= URL param
+    // ============================================================
+    document.getElementById('diorama-model').setAttribute('src', 'models/' + DIORAMA_FILE);
+    document.getElementById('current-model-name').textContent = '📦 ' + DIORAMA_FILE;
+
+    function switchDiorama() {
+      const filename = document.getElementById('diorama-filename').value.trim();
+      if (!filename) return;
+      // Save current tweaks before navigating
+      saveToStorage();
+      // Navigate with new ?d= param
+      const url = new URL(location.href);
+      url.searchParams.set('d', filename);
+      location.href = url.toString();
+    }
+
+    // ============================================================
+    //  DEBUG PANEL — updateScene & copyValues
+    // ============================================================
+    function updateScene() {
+      // If animation is running, cancel it without resetting positions —
+      // updateScene is about to set the correct positions from sliders anyway.
+      if (animRunning) {
+        animRunning = false;
+        if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+        const btn = document.getElementById('anim-btn');
+        btn.classList.remove('playing');
+        btn.innerHTML = '&#9654; &nbsp; Play Scene 10';
+      }
+      if (animFinished) {
+        animFinished = false;
+        const btn = document.getElementById('anim-btn');
+        btn.classList.remove('playing');
+        btn.innerHTML = '&#9654; &nbsp; Play Scene 10';
+      }
+
+      const dioramaScale = parseFloat(document.getElementById('slider-diorama').value);
+      const dioramaY = parseFloat(document.getElementById('slider-diorama-y').value);
+      const dioramaRot = parseFloat(document.getElementById('slider-diorama-rot').value);
+      const dioramaTilt = parseFloat(document.getElementById('slider-diorama-tilt').value);
+      const sceneH = parseFloat(document.getElementById('slider-height').value);
+
+      const pagongS = parseFloat(document.getElementById('slider-pagong-s').value);
+      const pagongX = parseFloat(document.getElementById('slider-pagong-x').value);
+      const pagongY = parseFloat(document.getElementById('slider-pagong-y').value);
+      const pagongZ = parseFloat(document.getElementById('slider-pagong-z').value);
+      const pagongRot = parseFloat(document.getElementById('slider-pagong-rot').value);
+
+      const kunehoS = parseFloat(document.getElementById('slider-kuneho-s').value);
+      const kunehoX = parseFloat(document.getElementById('slider-kuneho-x').value);
+      const kunehoY = parseFloat(document.getElementById('slider-kuneho-y').value);
+      const kunehoZ = parseFloat(document.getElementById('slider-kuneho-z').value);
+      const kunehoRot = parseFloat(document.getElementById('slider-kuneho-rot').value);
+
+      // Update display values
+      document.getElementById('val-diorama').textContent = dioramaScale.toFixed(3);
+      document.getElementById('val-diorama-y').textContent = dioramaY.toFixed(2);
+      document.getElementById('val-diorama-rot').textContent = dioramaRot.toFixed(0);
+      document.getElementById('val-diorama-tilt').textContent = dioramaTilt.toFixed(0);
+      document.getElementById('val-height').textContent = sceneH.toFixed(2);
+
+      document.getElementById('val-pagong-s').textContent = pagongS.toFixed(3);
+      document.getElementById('val-pagong-x').textContent = pagongX.toFixed(2);
+      document.getElementById('val-pagong-y').textContent = pagongY.toFixed(2);
+      document.getElementById('val-pagong-z').textContent = pagongZ.toFixed(2);
+      document.getElementById('val-pagong-rot').textContent = pagongRot.toFixed(0);
+
+      document.getElementById('val-kuneho-s').textContent = kunehoS.toFixed(3);
+      document.getElementById('val-kuneho-x').textContent = kunehoX.toFixed(2);
+      document.getElementById('val-kuneho-y').textContent = kunehoY.toFixed(2);
+      document.getElementById('val-kuneho-z').textContent = kunehoZ.toFixed(2);
+      document.getElementById('val-kuneho-rot').textContent = kunehoRot.toFixed(0);
+
+      // Apply to scene
+      document.getElementById('diorama-scene').setAttribute('position', `0 ${sceneH} 0`);
+      document.getElementById('diorama-scene').setAttribute('rotation', `${dioramaTilt} ${dioramaRot} 0`);
+      document.getElementById('diorama-base').setAttribute('scale', `${dioramaScale} ${dioramaScale} ${dioramaScale}`);
+      document.getElementById('diorama-base').setAttribute('position', `0 ${dioramaY} 0`);
+
+      document.getElementById('pagong').setAttribute('scale', `${pagongS} ${pagongS} ${pagongS}`);
+      document.getElementById('pagong').setAttribute('position', `${pagongX} ${pagongY} ${pagongZ}`);
+      document.getElementById('pagong').setAttribute('rotation', `0 ${pagongRot} 0`);
+
+      document.getElementById('kuneho').setAttribute('scale', `${kunehoS} ${kunehoS} ${kunehoS}`);
+      document.getElementById('kuneho').setAttribute('position', `${kunehoX} ${kunehoY} ${kunehoZ}`);
+      document.getElementById('kuneho').setAttribute('rotation', `0 ${kunehoRot} 0`);
+
+      // Persist every change to localStorage automatically
+      saveToStorage();
+    }
+
+    function copyValues() {
+      const vals =
+        `Diorama: scale=${document.getElementById('slider-diorama').value}, y=${document.getElementById('slider-diorama-y').value}\n` +
+        `Pagong:  scale=${document.getElementById('slider-pagong-s').value}, pos=(${document.getElementById('slider-pagong-x').value}, ${document.getElementById('slider-pagong-y').value}, ${document.getElementById('slider-pagong-z').value}), rot=${document.getElementById('slider-pagong-rot').value}\n` +
+        `Kuneho:  scale=${document.getElementById('slider-kuneho-s').value}, pos=(${document.getElementById('slider-kuneho-x').value}, ${document.getElementById('slider-kuneho-y').value}, ${document.getElementById('slider-kuneho-z').value}), rot=${document.getElementById('slider-kuneho-rot').value}\n` +
+        `Scene height: ${document.getElementById('slider-height').value}`;
+      navigator.clipboard.writeText(vals).then(() => alert('Values copied!'));
+    }
+
+    function resetDefaults() {
+      // Clear ALL historical storage keys — old keys survive version bumps
+      // and load stale positions on the next session, causing teleportation.
+      ['ar-preview-tweaks-v4',
+       'ar-sandbox-tweaks-v5', 'ar-sandbox-tweaks-v6',
+       'ar-sandbox-tweaks-v7', 'ar-sandbox-tweaks-v8',
+       'ar-sandbox-tweaks-v9', 'ar-sandbox-tweaks-v10',
+       'ar-sandbox-tweaks-v11', 'ar-sandbox-tweaks-v12',
+       'ar-sandbox-tweaks-v13', 'ar-sandbox-tweaks-v14',
+       'ar-sandbox-tweaks-v15'
+      ].forEach(k => localStorage.removeItem(k));
+      location.reload();
+    }
+
+    // ============================================================
+    //  SCENE 10 - ANG ARAL
+    //  Starts directly on the final positions. Kuneho talks first,
+    //  then Pagong talks, then both jump happily out of sync.
+    // ============================================================
+
+    const T_K_TALK_END = 3000;
+    const T_P_TALK_END = 6000;
+    const T_DONE = 10000;
+    const TALK_FREQ = 6.0;
+    const TALK_H = 0.6;
+    const HAPPY_JUMP_H = 1.2;
+    const P_JUMP_FREQ = 2.4;
+    const K_JUMP_FREQ = 2.7;
+    const K_JUMP_OFFSET = 0.45;
+
+    let animRunning = false;
+    let animFinished = false;
+    let animStart = null;
+    let animFrameId = null;
+    const P_POSE = { x: -6, y: 3, z: 15.8, rot: 85 };
+    const K_POSE = { x: 6, y: 5, z: 16.9, rot: 90 };
+
+    function scene10Tick(timestamp) {
+      if (!animStart) animStart = timestamp;
+      const elapsed = timestamp - animStart;
+
+      const pagong = document.getElementById('pagong');
+      const kuneho = document.getElementById('kuneho');
+
+      if (elapsed < T_K_TALK_END) {
+        const bounce = Math.max(0, Math.sin(elapsed / 1000 * TALK_FREQ * Math.PI)) * TALK_H;
+        pagong.setAttribute('position', `${P_POSE.x} ${P_POSE.y} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position',
+          `${K_POSE.x} ${(K_POSE.y + bounce).toFixed(3)} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else if (elapsed < T_P_TALK_END) {
+        const localElapsed = elapsed - T_K_TALK_END;
+        const bounce = Math.max(0, Math.sin(localElapsed / 1000 * TALK_FREQ * Math.PI)) * TALK_H;
+        pagong.setAttribute('position',
+          `${P_POSE.x} ${(P_POSE.y + bounce).toFixed(3)} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position', `${K_POSE.x} ${K_POSE.y} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else if (elapsed < T_DONE) {
+        const localElapsed = elapsed - T_P_TALK_END;
+        const pJump = Math.abs(Math.sin(localElapsed / 1000 * P_JUMP_FREQ * Math.PI)) * HAPPY_JUMP_H;
+        const kJump = Math.abs(Math.sin((localElapsed / 1000 * K_JUMP_FREQ + K_JUMP_OFFSET) * Math.PI)) * HAPPY_JUMP_H;
+        pagong.setAttribute('position',
+          `${P_POSE.x} ${(P_POSE.y + pJump).toFixed(3)} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position',
+          `${K_POSE.x} ${(K_POSE.y + kJump).toFixed(3)} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else {
+        resetToStart();
+      }
+
+      if (elapsed >= T_DONE) {
+        finishAnimation();
+        return;
+      }
+
+      if (animRunning) animFrameId = requestAnimationFrame(scene10Tick);
+    }
+
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function handleAnimBtn() {
+      if (animRunning) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    }
+
+    function startAnimation() {
+      if (animRunning) return;
+      if (animFinished) {
+        updateScene();
+      }
+      animRunning = true;
+      animFinished = false;
+      animStart   = null;
+      resetToStart();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.add('playing');
+      btn.innerHTML = '&#9646; &nbsp; Stop';
+
+      animFrameId = requestAnimationFrame(scene10Tick);
+    }
+
+    function finishAnimation() {
+      animRunning = false;
+      animFinished = true;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      document.getElementById('pagong').setAttribute('position',
+        `${P_POSE.x} ${P_POSE.y} ${P_POSE.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${P_POSE.rot} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${K_POSE.x} ${K_POSE.y} ${K_POSE.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${K_POSE.rot} 0`);
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#8635; &nbsp; Restart';
+    }
+
+    function resetToStart() {
+      document.getElementById('pagong').setAttribute('position',
+        `${P_POSE.x} ${P_POSE.y} ${P_POSE.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${P_POSE.rot} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${K_POSE.x} ${K_POSE.y} ${K_POSE.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${K_POSE.rot} 0`);
+    }
+
+    function stopAnimation() {
+      animRunning = false;
+      animFinished = false;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      resetToStart();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#9654; &nbsp; Play Scene 10';
+    }
+
+    // ============================================================
+    //  LOCALSTORAGE — persist slider values across reloads
+    // ============================================================
+    const STORAGE_KEY = 'ar-sandbox-tweaks-v15';
+
+    function saveToStorage() {
+      const data = {};
+      document.querySelectorAll('#debug-panel input[type=range]').forEach(s => {
+        data[s.id] = s.value;
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function loadFromStorage() {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      try {
+        const data = JSON.parse(raw);
+        Object.entries(data).forEach(([id, val]) => {
+          const el = document.getElementById(id);
+          if (el) el.value = val;
+        });
+        updateScene(); // apply the restored values to the 3-D scene
+      } catch (e) { /* corrupted storage — ignore */ }
+    }
+
+    // ============================================================
+    //  CLICK-TO-TYPE on value labels
+    // ============================================================
+
+    /**
+     * Turns a .value span into an inline number input.
+     * Pressing Enter or clicking away commits the value;
+     * pressing Escape cancels without changing anything.
+     */
+    function makeEditable(span, slider) {
+      // Don't open a second input if one is already open
+      if (span.style.display === 'none') return;
+
+      const step = parseFloat(slider.step) || 0.1;
+      const decimals = step < 0.005 ? 3 : step < 0.1 ? 2 : step < 1 ? 1 : 0;
+
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'value-input';
+      input.step = step;
+      input.value = parseFloat(slider.value);
+
+      // Hide the span and insert the input in its place
+      span.style.display = 'none';
+      span.parentNode.insertBefore(input, span);
+      input.focus();
+      input.select();
+
+      function commit() {
+        const newVal = parseFloat(input.value);
+        if (!isNaN(newVal)) {
+          // Extend slider range if the typed value is out of bounds
+          if (newVal < parseFloat(slider.min)) slider.min = newVal;
+          if (newVal > parseFloat(slider.max)) slider.max = newVal;
+          slider.value = newVal;
+          span.textContent = newVal.toFixed(decimals);
+          updateScene();
+        }
+        input.remove();
+        span.style.display = '';
+      }
+
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { input.blur(); }
+        if (e.key === 'Escape') { input.remove(); span.style.display = ''; }
+      });
+      // Prevent scroll-wheel from accidentally changing the value
+      input.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+    }
+
+    // Wire up click-to-type for every value span in the debug panel
+    document.querySelectorAll('#debug-panel .value').forEach(span => {
+      const sliderId = 'slider-' + span.id.replace('val-', '');
+      const slider = document.getElementById(sliderId);
+      if (!slider) return;
+      span.title = 'Click to type an exact value';
+      span.addEventListener('click', () => makeEditable(span, slider));
+    });
+
+    // Restore saved values on page load
+    loadFromStorage();
+  </script>
+
+</body>
+
+</html>

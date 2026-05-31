@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pahina 3: Ang Hamon — Si Pagong at si Kuneho</title>
+  <meta name="description" content="Scene 3: Ang Hamon. Si Pagong at si Kuneho AR Storybook.">
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+  <!-- aframe-extras: GLTF animation support -->
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.5.0/dist/aframe-extras.min.js"></script>
+
+  <!-- Orbit controls for desktop -->
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+    }
+
+    /* ===================== TOP NAV BAR ===================== */
+    #scene-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      height: 52px;
+      background: rgba(10, 10, 26, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: scale(1.04);
+    }
+
+    .nav-btn:active { transform: scale(0.97); }
+
+    .nav-btn.ar-btn {
+      border-color: rgba(118, 75, 162, 0.6);
+      background: rgba(102, 126, 234, 0.15);
+      color: #c4b5f4;
+    }
+
+    .nav-btn.ar-btn:hover {
+      background: rgba(102, 126, 234, 0.28);
+      border-color: rgba(118, 75, 162, 0.9);
+    }
+
+    #scene-title {
+      color: white;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    #scene-title small {
+      display: block;
+      font-size: 0.68rem;
+      opacity: 0.55;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    /* ===================== ORBIT HINT ===================== */
+    #orbit-hint {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.68rem;
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.5s;
+    }
+
+    /* ===================== ANIM BUTTON ===================== */
+    #anim-btn {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      border-radius: 50px;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+    }
+
+    #anim-btn:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.75);
+    }
+
+    #anim-btn:active { transform: translateX(-50%) scale(0.97); }
+
+    #anim-btn.playing {
+      background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
+      box-shadow: 0 4px 20px rgba(240, 84, 84, 0.45);
+    }
+
+    #anim-btn.playing:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(240, 84, 84, 0.7);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===================== TOP NAV ===================== -->
+  <nav id="scene-nav">
+    <a href="../../pages.html" class="nav-btn">← Pages</a>
+
+    <div id="scene-title">
+      Pahina 3
+      <small>Ang Hamon</small>
+    </div>
+
+    <a href="./ar.html" class="nav-btn ar-btn">📷 AR</a>
+  </nav>
+
+  <!-- ===================== PLAY/STOP BUTTON ===================== -->
+  <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; Play Scene 3</button>
+  <audio id="narration" src="../../assets/audio/scene3.mp3" preload="auto"></audio>
+
+  <!-- ===================== ORBIT HINT ===================== -->
+  <p id="orbit-hint">Drag to orbit &nbsp;·&nbsp; Scroll to zoom</p>
+
+  <!-- ============================================================ -->
+  <!--  3D SCENE                                                     -->
+  <!-- ============================================================ -->
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false">
+
+    <!-- Assets — diorama is local, characters are shared -->
+    <a-assets>
+      <a-asset-item id="diorama-model" src="./diorama.glb"></a-asset-item>
+      <a-asset-item id="turtle-model"  src="../../models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model"  src="../../models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- Ground plane -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="10" height="10"
+      color="#2a3a2a" shadow="receive: true">
+    </a-plane>
+
+    <!-- Grid helper -->
+    <a-entity position="0 0.01 0" rotation="-90 0 0"
+      geometry="primitive: plane; width: 10; height: 10"
+      material="src: data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='none' stroke='%23ffffff20' stroke-width='1'/></svg>; repeat: 10 10; transparent: true">
+    </a-entity>
+
+    <!-- Diorama group -->
+    <a-entity id="diorama-scene" position="0 0.2 0" scale="0.3 0.3 0.3" rotation="0 0 0">
+
+      <!-- DIORAMA BASE -->
+      <a-entity id="diorama-base"
+        gltf-model="#diorama-model"
+        scale="2.696 2.696 2.696"
+        position="0 -4.0 0">
+      </a-entity>
+
+      <!-- TURTLE (Pagong) — Scene 3 start position -->
+      <a-entity id="pagong"
+        gltf-model="#turtle-model"
+        position="-20.2 3 14.8"
+        scale="0.5 0.5 0.5"
+        rotation="0 65 0">
+      </a-entity>
+
+      <!-- RABBIT (Kuneho) — Scene 3 position (static until Phase 3) -->
+      <a-entity id="kuneho"
+        gltf-model="#rabbit-model"
+        position="7.1 5.2 18"
+        scale="0.01 0.01 0.01"
+        rotation="0 15 0">
+      </a-entity>
+
+    </a-entity>
+
+    <!-- Lighting -->
+    <a-light type="ambient"     color="#ffffff" intensity="0.6"></a-light>
+    <a-light type="directional" color="#ffeedd" intensity="0.8" position="2 4 1"></a-light>
+
+    <!-- Camera with orbit controls -->
+    <a-entity camera position="0 2 4"
+      orbit-controls="target: 0 0.5 0; minDistance: 1; maxDistance: 20; initialPosition: 0 2 4; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    // ============================================================
+    //  SCENE 3 — SEQUENCED ANIMATION
+    //  1. Pagong rotates 65° → 75° (0.6s)
+    //  2. Pagong hops forward X: -20.2 → -3.8 (2.5s)
+    //  3. Pagong talks (5s)
+    //  4. Kuneho talks (5s)
+    //  Animation ends automatically.
+    // ============================================================
+
+    // Phase end times (ms)
+    const T_ROTATE = 600;     // 0 → 600ms    : pagong rotates
+    const T_WALK   = 3100;    // 600 → 3100ms  : pagong walks (2.5s)
+    const T_PTALK  = 8100;    // 3100 → 8100ms : pagong talks (5s)
+    const T_KTALK  = 13100;   // 8100 → 13100ms: kuneho talks (5s)
+
+    // Frozen Scene 3 positions
+    const PAGONG_REST       = { x: -20.2, y: 3, z: 14.8, rot: 65 };
+    const PAGONG_TARGET_X   = -3.8;
+    const PAGONG_TARGET_ROT = 75;
+    const KUNEHO_POS        = { x: 7.1, y: 5.2, z: 18, rot: 15 };
+
+    // Walk hop params
+    const WALK_HOP_H    = 0.8;
+    const WALK_HOP_FREQ = 4.0;
+
+    // Talk hop params
+    const TALK_H    = 0.5;
+    const TALK_FREQ = 6.0;
+
+    let animRunning   = false;
+    let animFinished  = false;
+    let animStart     = null;
+    let animFrameId   = null;
+    let pagongSettled = false;
+
+    /** Scene 3 sequenced tick */
+    function scene3Tick(timestamp) {
+      if (!animStart) animStart = timestamp;
+      const elapsed = timestamp - animStart;
+
+      const pagong = document.getElementById('pagong');
+      const kuneho = document.getElementById('kuneho');
+
+      if (elapsed < T_ROTATE) {
+        // ---- Phase 0: Pagong rotates 65° → 75° ----
+        const t   = elapsed / T_ROTATE;
+        const rot = PAGONG_REST.rot + (PAGONG_TARGET_ROT - PAGONG_REST.rot) * easeInOut(t);
+        pagong.setAttribute('rotation', `0 ${rot.toFixed(2)} 0`);
+        pagong.setAttribute('position',
+          `${PAGONG_REST.x} ${PAGONG_REST.y} ${PAGONG_REST.z}`);
+
+      } else if (elapsed < T_WALK) {
+        // ---- Phase 1: Pagong hops forward ----
+        const t      = (elapsed - T_ROTATE) / (T_WALK - T_ROTATE);
+        const x      = PAGONG_REST.x + (PAGONG_TARGET_X - PAGONG_REST.x) * easeInOut(t);
+        const bounce = Math.abs(Math.sin(elapsed / 1000 * WALK_HOP_FREQ * Math.PI)) * WALK_HOP_H;
+        pagong.setAttribute('rotation', `0 ${PAGONG_TARGET_ROT} 0`);
+        pagong.setAttribute('position',
+          `${x.toFixed(3)} ${PAGONG_REST.y + bounce} ${PAGONG_REST.z}`);
+        pagongSettled = false;
+
+      } else if (elapsed < T_PTALK) {
+        // ---- Phase 2: Pagong talks ----
+        const raw    = Math.sin(elapsed / 1000 * TALK_FREQ * Math.PI);
+        const bounce = Math.max(0, raw) * TALK_H;
+        pagong.setAttribute('rotation', `0 ${PAGONG_TARGET_ROT} 0`);
+        pagong.setAttribute('position',
+          `${PAGONG_TARGET_X} ${PAGONG_REST.y + bounce} ${PAGONG_REST.z}`);
+        pagongSettled = false;
+
+      } else if (elapsed < T_KTALK) {
+        // ---- Phase 3: Kuneho talks, Pagong rests ----
+        if (!pagongSettled) {
+          pagong.setAttribute('position',
+            `${PAGONG_TARGET_X} ${PAGONG_REST.y} ${PAGONG_REST.z}`);
+          pagong.setAttribute('rotation', `0 ${PAGONG_TARGET_ROT} 0`);
+          pagongSettled = true;
+        }
+        const raw    = Math.sin(elapsed / 1000 * TALK_FREQ * Math.PI);
+        const bounce = Math.max(0, raw) * TALK_H;
+        kuneho.setAttribute('position',
+          `${KUNEHO_POS.x} ${KUNEHO_POS.y + bounce} ${KUNEHO_POS.z}`);
+
+      } else {
+        // ---- Done ----
+        finishAnimationSequence();
+        return;
+      }
+
+      if (animRunning) {
+        animFrameId = requestAnimationFrame(scene3Tick);
+      }
+    }
+
+    /** Smooth ease in-out (cubic) */
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    /** Toggle Play / Stop */
+    function handleAnimBtn() {
+      animRunning ? stopAnimation() : startAnimation();
+    }
+
+    function startAnimation() {
+      if (animRunning) return;
+      animRunning   = true;
+      animFinished  = false;
+      animStart     = null;
+      pagongSettled = false;
+      playNarration();
+
+      // Ensure kuneho starts at rest
+      document.getElementById('kuneho').setAttribute('position',
+        `${KUNEHO_POS.x} ${KUNEHO_POS.y} ${KUNEHO_POS.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${KUNEHO_POS.rot} 0`);
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.add('playing');
+      btn.innerHTML = '&#9646; &nbsp; Stop';
+
+      animFrameId = requestAnimationFrame(scene3Tick);
+    }
+
+    function finishAnimationSequence() {
+      animFinished = true;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      document.getElementById('pagong').setAttribute('position',
+        `${PAGONG_TARGET_X} ${PAGONG_REST.y} ${PAGONG_REST.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${PAGONG_TARGET_ROT} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${KUNEHO_POS.x} ${KUNEHO_POS.y} ${KUNEHO_POS.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${KUNEHO_POS.rot} 0`);
+
+      if (document.getElementById('narration').ended) stopAnimation();
+    }
+
+    function stopAnimation() {
+      animRunning = false;
+      animFinished = false;
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      stopNarration();
+
+      // Reset pagong to start position
+      document.getElementById('pagong').setAttribute('position',
+        `${PAGONG_REST.x} ${PAGONG_REST.y} ${PAGONG_REST.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${PAGONG_REST.rot} 0`);
+
+      // Reset kuneho to rest
+      document.getElementById('kuneho').setAttribute('position',
+        `${KUNEHO_POS.x} ${KUNEHO_POS.y} ${KUNEHO_POS.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${KUNEHO_POS.rot} 0`);
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#9654; &nbsp; Play Scene 3';
+    }
+
+    function playNarration() {
+      const narration = document.getElementById('narration');
+      narration.currentTime = 0;
+      narration.play().catch(() => {});
+    }
+
+    function stopNarration() {
+      const narration = document.getElementById('narration');
+      narration.pause();
+      narration.currentTime = 0;
+    }
+
+    document.getElementById('narration').addEventListener('ended', stopAnimation);
+
+    // Hide orbit hint after first interaction
+    document.addEventListener('mousedown', () => {
+      const hint = document.getElementById('orbit-hint');
+      if (hint) hint.style.opacity = '0';
+    }, { once: true });
+  </script>
+
+</body>
+
+</html>

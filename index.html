@@ -14,11 +14,28 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@400;500;600;700&display=swap"
     rel="stylesheet">
-
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
   <link rel="stylesheet" href="landing.css">
 </head>
 
-<body>
+<body class="is-loading">
+  <div id="app-loader" role="status" aria-live="polite">
+    <div class="loader-card">
+      <lottie-player
+        class="loader-lottie"
+        src="assets/images/cat-loading.json"
+        background="transparent"
+        speed="1"
+        loop
+        autoplay>
+      </lottie-player>
+      <p class="loader-title">Loading storybook assets...</p>
+      <div class="loader-track" aria-hidden="true">
+        <span id="loader-bar"></span>
+      </div>
+    </div>
+  </div>
+
   <div class="landing-page">
 
     <!-- Music Toggle -->
@@ -31,7 +48,7 @@
 
     <!-- Background Hero Image -->
     <div class="bg-hero">
-      <img src="assets/images/bghero.png" alt="Voxel forest scene with turtle and rabbit at the starting line"
+      <img data-src="assets/images/bghero.png" alt="Voxel forest scene with turtle and rabbit at the starting line"
         id="bg-hero-img">
     </div>
 
@@ -52,7 +69,7 @@
 
       <!-- Title Logo -->
       <div class="title-container fade-in">
-        <img src="assets/images/titletext.png" alt="Si Pagong at si Kuneho">
+        <img data-src="assets/images/titletext.png" alt="Si Pagong at si Kuneho">
       </div>
 
       <!-- Subtitle -->
@@ -63,7 +80,7 @@
       <!-- Start Button -->
       <div class="start-btn-container fade-in fade-in-delay-2" id="start-btn" onclick="startAR()" role="button"
         tabindex="0" aria-label="Start AR Camera">
-        <img src="assets/images/woodenbanner.png" alt="">
+        <img data-src="assets/images/woodenbanner.png" alt="">
         <span class="start-btn-text">▶ Start</span>
       </div>
 
@@ -77,6 +94,145 @@
   </div>
 
   <script>
+    const visibleImagePreloadFiles = [
+      'assets/images/cat-loading.json',
+      'assets/images/bghero.png',
+      'assets/images/titletext.png',
+      'assets/images/woodenbanner.png',
+      'assets/images/markers/page1.jpg',
+      'assets/images/markers/page2.jpg',
+      'assets/images/markers/page3.jpg',
+      'assets/images/markers/page4.jpg',
+      'assets/images/markers/page5.jpg',
+      'assets/images/markers/page6.jpg',
+      'assets/images/markers/page7.jpg',
+      'assets/images/markers/page8.jpg',
+      'assets/images/markers/page9.jpg',
+      'assets/images/markers/page10.jpg'
+    ];
+
+    const pagePreloadFiles = [
+      'pages.html',
+      'pages.css'
+    ];
+
+    const arPreloadFiles = [
+      'assets/audio/bgmusic.mp3',
+      'assets/images/markers/targets-scene1.mind',
+      'assets/images/markers/targets-scene2.mind',
+      'assets/images/markers/targets-scene3.mind',
+      'assets/images/markers/targets-scene4.mind',
+      'assets/images/markers/targets-scene5.mind',
+      'scenes/scene1/diorama.glb',
+      'scenes/scene2/diorama.glb',
+      'scenes/scene3/diorama.glb',
+      'scenes/scene4/diorama.glb',
+      'scenes/scene5/diorama.glb',
+      'models/turtle.glb',
+      'models/rabbit.glb',
+      'assets/audio/scene1.mp3',
+      'assets/audio/scene2.mp3',
+      'assets/audio/scene3.mp3',
+      'assets/audio/scene4.mp3',
+      'assets/audio/scene5.mp3'
+    ];
+
+    const loaderBar = document.getElementById('loader-bar');
+    const minLoaderMs = 900;
+    const loaderStartedAt = performance.now();
+    let loadedCount = 0;
+    const totalAssets = visibleImagePreloadFiles.length + pagePreloadFiles.length + arPreloadFiles.length;
+
+    function markAssetLoaded() {
+      loadedCount += 1;
+      loaderBar.style.width = Math.min(96, 8 + Math.round((loadedCount / totalAssets) * 88)) + '%';
+    }
+
+    function preloadImage(url) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = async () => {
+          try {
+            if (img.decode) await img.decode();
+          } catch (_) {
+            // The image is already loaded; decoding failures should not trap users.
+          }
+          markAssetLoaded();
+          resolve();
+        };
+        img.onerror = () => {
+          markAssetLoaded();
+          resolve();
+        };
+        img.src = url;
+      });
+    }
+
+    function preloadFile(url) {
+      return fetch(url, { cache: 'force-cache' })
+        .catch(() => {
+          // The destination pages still perform their own loading and error reporting.
+        })
+        .finally(markAssetLoaded);
+    }
+
+    function assignLandingImageSources() {
+      document.querySelectorAll('.landing-page img[data-src]').forEach((img) => {
+        img.src = img.dataset.src;
+      });
+    }
+
+    async function decodeLandingImages() {
+      const images = Array.from(document.querySelectorAll('.landing-page img'));
+      await Promise.allSettled(images.map(async (img) => {
+        if (!img.complete) {
+          await new Promise((resolve) => {
+            img.addEventListener('load', resolve, { once: true });
+            img.addEventListener('error', resolve, { once: true });
+          });
+        }
+
+        if (img.decode) {
+          try {
+            await img.decode();
+          } catch (_) {
+            // Already loaded images can still reject decode in some browsers.
+          }
+        }
+      }));
+    }
+
+    function preloadVisibleExperience() {
+      const imageWork = visibleImagePreloadFiles.map(preloadImage);
+      const pageWork = pagePreloadFiles.map(preloadFile);
+      const arWork = arPreloadFiles.map(preloadFile);
+      return Promise.allSettled([...imageWork, ...pageWork, ...arWork])
+        .then(() => {
+          assignLandingImageSources();
+          return decodeLandingImages();
+        });
+    }
+
+    function hideLoader() {
+      const elapsed = performance.now() - loaderStartedAt;
+      const remaining = Math.max(0, minLoaderMs - elapsed);
+
+      setTimeout(() => {
+        loaderBar.style.width = '100%';
+        document.body.classList.remove('is-loading');
+        document.body.classList.add('is-ready');
+      }, remaining);
+    }
+
+    const preloadWork = preloadVisibleExperience();
+    preloadWork.then(hideLoader);
+
+    setTimeout(() => {
+      if (document.body.classList.contains('is-loading')) {
+        document.querySelector('.loader-title').textContent = 'Still loading assets... almost there.';
+      }
+    }, 7000);
+
     // Start AR — navigates to the actual AR page
     function startAR() {
       const btn = document.getElementById('start-btn');

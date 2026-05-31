@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pahina 8: Ang Pagkagulat — Si Pagong at si Kuneho</title>
+  <meta name="description" content="Scene 8: Ang Pagkagulat. Si Pagong at si Kuneho AR Storybook.">
+
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.5.0/dist/aframe-extras.min.js"></script>
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+    }
+
+    #scene-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      height: 52px;
+      background: rgba(10, 10, 26, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: scale(1.04);
+    }
+
+    .nav-btn:active { transform: scale(0.97); }
+
+    .nav-btn.ar-btn {
+      border-color: rgba(118, 75, 162, 0.6);
+      background: rgba(102, 126, 234, 0.15);
+      color: #c4b5f4;
+    }
+
+    .nav-btn.ar-btn:hover {
+      background: rgba(102, 126, 234, 0.28);
+      border-color: rgba(118, 75, 162, 0.9);
+    }
+
+    #scene-title {
+      color: white;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    #scene-title small {
+      display: block;
+      font-size: 0.68rem;
+      opacity: 0.55;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    #orbit-hint {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.68rem;
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.5s;
+    }
+
+    #anim-btn {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      border-radius: 50px;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+    }
+
+    #anim-btn:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.75);
+    }
+
+    #anim-btn:active { transform: translateX(-50%) scale(0.97); }
+
+    #anim-btn.playing {
+      background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
+      box-shadow: 0 4px 20px rgba(240, 84, 84, 0.45);
+    }
+
+    #anim-btn.playing:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(240, 84, 84, 0.7);
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav id="scene-nav">
+    <a href="../../pages.html" class="nav-btn">← Pages</a>
+    <div id="scene-title">
+      Pahina 8
+      <small>Ang Pagkagulat</small>
+    </div>
+    <a href="./ar.html" class="nav-btn ar-btn">📷 AR</a>
+  </nav>
+
+  <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; Play Scene 8</button>
+  <audio id="narration" src="../../assets/audio/scene8.mp3" preload="auto"></audio>
+  <p id="orbit-hint">Drag to orbit &nbsp;·&nbsp; Scroll to zoom</p>
+
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false">
+
+    <a-assets>
+      <a-asset-item id="diorama-model" src="./diorama.glb"></a-asset-item>
+      <a-asset-item id="turtle-model"  src="../../models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model"  src="../../models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <a-plane position="0 0 0" rotation="-90 0 0" width="10" height="10"
+      color="#2a3a2a" shadow="receive: true"></a-plane>
+
+    <a-entity position="0 0.01 0" rotation="-90 0 0"
+      geometry="primitive: plane; width: 10; height: 10"
+      material="src: data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='none' stroke='%23ffffff20' stroke-width='1'/></svg>; repeat: 10 10; transparent: true">
+    </a-entity>
+
+    <a-entity id="diorama-scene" position="0 0.2 0" scale="0.3 0.3 0.3" rotation="0 0 0">
+
+      <a-entity id="diorama-base"
+        gltf-model="#diorama-model"
+        scale="2.696 2.696 2.696"
+        position="0 -4.0 0">
+      </a-entity>
+
+      <!-- TURTLE (Pagong) — Scene 8 start position (Scene 7 ending position) -->
+      <a-entity id="pagong"
+        gltf-model="#turtle-model"
+        position="-3.8 1.6 20.2"
+        scale="0.5 0.5 0.5"
+        rotation="0 -80 0">
+      </a-entity>
+
+      <!-- RABBIT (Kuneho) — starts asleep, wakes during Scene 8 -->
+      <a-entity id="kuneho"
+        gltf-model="#rabbit-model"
+        position="4.2 3.85 24.6"
+        scale="0.01 0.01 0.01"
+        rotation="0 90 -90">
+      </a-entity>
+
+    </a-entity>
+
+    <a-light type="ambient"     color="#ffffff" intensity="0.6"></a-light>
+    <a-light type="directional" color="#ffeedd" intensity="0.8" position="2 4 1"></a-light>
+
+    <a-entity camera position="0 2 4"
+      orbit-controls="target: 0 0.5 0; minDistance: 1; maxDistance: 20; initialPosition: 0 2 4; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    // ============================================================
+    //  SCENE 8 — KUNEHO WAKES AND TALKS, PAGONG MOVES FORWARD
+    //  Starts from Scene 7's final state. Kuneho rises from sleep,
+    //  then talks. Pagong walks a short distance forward.
+    // ============================================================
+
+    const T_K_WAKE_END = 2600;
+    const T_K_TALK_END = 6200;
+    const T_P_WALK_END = 7000;
+    const T_DONE = 7000;
+    const WALK_HOP_H = 0.9;
+    const P_HOP_FREQ = 2.8;
+    const TALK_FREQ = 6.0;
+    const TALK_H = 0.6;
+    const K_LAY_Z = -90;
+
+    const P_START = { x: -3.8, y: 1.6, z: 20.2, rot: -80 };
+    const P_TARGET = { x: -11.5, y: 1.6, z: 20.2, rot: -80 };
+    const K_SLEEP = { x: 4.2, y: 3.85, z: 24.6, rot: 90, layZ: K_LAY_Z };
+    const K_AWAKE = { x: 4.2, y: 4.2, z: 24.6, rot: 90, layZ: 0 };
+
+    let animRunning = false;
+    let animFinished = false;
+    let animStart = null;
+    let animFrameId = null;
+
+    function scene8Tick(timestamp) {
+      if (!animStart) animStart = timestamp;
+      const elapsed = timestamp - animStart;
+
+      const pagong = document.getElementById('pagong');
+      const kuneho = document.getElementById('kuneho');
+
+      if (elapsed < T_P_WALK_END) {
+        const t = easeInOut(Math.min(1, elapsed / T_P_WALK_END));
+        const x = P_START.x + (P_TARGET.x - P_START.x) * t;
+        const bounce = Math.abs(Math.sin(elapsed / 1000 * P_HOP_FREQ * Math.PI)) * WALK_HOP_H;
+        pagong.setAttribute('position',
+          `${x.toFixed(3)} ${(P_START.y + bounce).toFixed(3)} ${P_START.z}`);
+        pagong.setAttribute('rotation',
+          `0 ${P_START.rot} 0`);
+      } else {
+        pagong.setAttribute('position',
+          `${P_TARGET.x} ${P_TARGET.y} ${P_TARGET.z}`);
+        pagong.setAttribute('rotation',
+          `0 ${P_TARGET.rot} 0`);
+      }
+
+      if (elapsed < T_K_WAKE_END) {
+        const t = easeInOut(elapsed / T_K_WAKE_END);
+        const y = K_SLEEP.y + (K_AWAKE.y - K_SLEEP.y) * t;
+        const layZ = K_SLEEP.layZ + (K_AWAKE.layZ - K_SLEEP.layZ) * t;
+        kuneho.setAttribute('position',
+          `${K_SLEEP.x} ${y.toFixed(3)} ${K_SLEEP.z}`);
+        kuneho.setAttribute('rotation',
+          `0 ${K_SLEEP.rot} ${layZ.toFixed(2)}`);
+
+      } else if (elapsed < T_K_TALK_END) {
+        const raw = Math.sin(elapsed / 1000 * TALK_FREQ * Math.PI);
+        const bounce = Math.max(0, raw) * TALK_H;
+        kuneho.setAttribute('position',
+          `${K_AWAKE.x} ${(K_AWAKE.y + bounce).toFixed(3)} ${K_AWAKE.z}`);
+        kuneho.setAttribute('rotation',
+          `0 ${K_AWAKE.rot} 0`);
+      } else {
+        kuneho.setAttribute('position',
+          `${K_AWAKE.x} ${K_AWAKE.y} ${K_AWAKE.z}`);
+        kuneho.setAttribute('rotation',
+          `0 ${K_AWAKE.rot} 0`);
+      }
+
+      if (elapsed >= T_DONE) {
+        finishAnimation();
+        return;
+      }
+
+      if (animRunning) animFrameId = requestAnimationFrame(scene8Tick);
+    }
+
+    function easeInOut(t) {
+      return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    function handleAnimBtn() {
+      if (animRunning) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    }
+
+    function startAnimation() {
+      if (animRunning) return;
+      if (animFinished) resetToStart();
+      animRunning = true;
+      animFinished = false;
+      animStart = null;
+      playNarration();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.add('playing');
+      btn.innerHTML = '&#9646; &nbsp; Stop';
+
+      animFrameId = requestAnimationFrame(scene8Tick);
+    }
+
+    function finishAnimation() {
+      animRunning = true;
+      animFinished = true;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      document.getElementById('pagong').setAttribute('position',
+        `${P_TARGET.x} ${P_TARGET.y} ${P_TARGET.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${P_TARGET.rot} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${K_AWAKE.x} ${K_AWAKE.y} ${K_AWAKE.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${K_AWAKE.rot} 0`);
+
+      if (document.getElementById('narration').ended) stopAnimation();
+    }
+
+    function resetToStart() {
+      document.getElementById('pagong').setAttribute('position',
+        `${P_START.x} ${P_START.y} ${P_START.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${P_START.rot} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${K_SLEEP.x} ${K_SLEEP.y} ${K_SLEEP.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${K_SLEEP.rot} ${K_SLEEP.layZ}`);
+    }
+
+    function stopAnimation() {
+      animRunning = false;
+      animFinished = false;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+      stopNarration();
+      resetToStart();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#9654; &nbsp; Play Scene 8';
+    }
+
+    function playNarration() {
+      const narration = document.getElementById('narration');
+      narration.currentTime = 0;
+      narration.play().catch(() => {});
+    }
+
+    function stopNarration() {
+      const narration = document.getElementById('narration');
+      narration.pause();
+      narration.currentTime = 0;
+    }
+
+    document.getElementById('narration').addEventListener('ended', stopAnimation);
+
+    // Hide orbit hint after first drag
+    document.addEventListener('mousedown', () => {
+      const hint = document.getElementById('orbit-hint');
+      if (hint) hint.style.opacity = '0';
+    }, { once: true });
+  </script>
+
+</body>
+</html>

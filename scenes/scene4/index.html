@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pahina 4: Ang Karera — Si Pagong at si Kuneho</title>
+  <meta name="description" content="Scene 4: Ang Karera. Si Pagong at si Kuneho AR Storybook.">
+
+  <!-- A-Frame -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+
+  <!-- aframe-extras: GLTF animation support -->
+  <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v7.5.0/dist/aframe-extras.min.js"></script>
+
+  <!-- Orbit controls for desktop -->
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+    }
+
+    /* ===================== TOP NAV BAR ===================== */
+    #scene-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 200;
+      height: 52px;
+      background: rgba(10, 10, 26, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+    }
+
+    .nav-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.35);
+      transform: scale(1.04);
+    }
+
+    .nav-btn:active { transform: scale(0.97); }
+
+    .nav-btn.ar-btn {
+      border-color: rgba(118, 75, 162, 0.6);
+      background: rgba(102, 126, 234, 0.15);
+      color: #c4b5f4;
+    }
+
+    .nav-btn.ar-btn:hover {
+      background: rgba(102, 126, 234, 0.28);
+      border-color: rgba(118, 75, 162, 0.9);
+    }
+
+    #scene-title {
+      color: white;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    #scene-title small {
+      display: block;
+      font-size: 0.68rem;
+      opacity: 0.55;
+      font-weight: 400;
+      margin-top: 1px;
+    }
+
+    /* ===================== ORBIT HINT ===================== */
+    #orbit-hint {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.68rem;
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.5s;
+    }
+
+    /* ===================== ANIM BUTTON ===================== */
+    #anim-btn {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 300;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      border-radius: 50px;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.3s ease;
+    }
+
+    #anim-btn:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(102, 126, 234, 0.75);
+    }
+
+    #anim-btn:active { transform: translateX(-50%) scale(0.97); }
+
+    #anim-btn.playing {
+      background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
+      box-shadow: 0 4px 20px rgba(240, 84, 84, 0.45);
+    }
+
+    #anim-btn.playing:hover {
+      transform: translateX(-50%) scale(1.06);
+      box-shadow: 0 8px 28px rgba(240, 84, 84, 0.7);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===================== TOP NAV ===================== -->
+  <nav id="scene-nav">
+    <a href="../../pages.html" class="nav-btn">← Pages</a>
+
+    <div id="scene-title">
+      Pahina 4
+      <small>Ang Karera</small>
+    </div>
+
+    <a href="./ar.html" class="nav-btn ar-btn">📷 AR</a>
+  </nav>
+
+  <!-- ===================== PLAY/STOP BUTTON ===================== -->
+  <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; Play Scene 4</button>
+  <audio id="narration" src="../../assets/audio/scene4.mp3" preload="auto"></audio>
+
+  <!-- ===================== ORBIT HINT ===================== -->
+  <p id="orbit-hint">Drag to orbit &nbsp;·&nbsp; Scroll to zoom</p>
+
+  <!-- ============================================================ -->
+  <!--  3D SCENE                                                     -->
+  <!-- ============================================================ -->
+  <a-scene
+    embedded
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false">
+
+    <!-- Assets — diorama is local, characters are shared -->
+    <a-assets>
+      <a-asset-item id="diorama-model" src="./diorama.glb"></a-asset-item>
+      <a-asset-item id="turtle-model"  src="../../models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model"  src="../../models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <!-- Ground plane -->
+    <a-plane position="0 0 0" rotation="-90 0 0" width="10" height="10"
+      color="#2a3a2a" shadow="receive: true">
+    </a-plane>
+
+    <!-- Grid helper -->
+    <a-entity position="0 0.01 0" rotation="-90 0 0"
+      geometry="primitive: plane; width: 10; height: 10"
+      material="src: data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='none' stroke='%23ffffff20' stroke-width='1'/></svg>; repeat: 10 10; transparent: true">
+    </a-entity>
+
+    <!-- Diorama group -->
+    <a-entity id="diorama-scene" position="0 0.2 0" scale="0.3 0.3 0.3" rotation="0 0 0">
+
+      <!-- DIORAMA BASE (finish line diorama) -->
+      <a-entity id="diorama-base"
+        gltf-model="#diorama-model"
+        scale="2.696 2.696 2.696"
+        position="0 -4.0 0">
+      </a-entity>
+
+      <!-- TURTLE (Pagong) — Scene 4 position -->
+      <a-entity id="pagong"
+        gltf-model="#turtle-model"
+        position="25.7 1.3 16.9"
+        scale="0.5 0.5 0.5"
+        rotation="0 -100 0">
+      </a-entity>
+
+      <!-- RABBIT (Kuneho) — Scene 4 position -->
+      <a-entity id="kuneho"
+        gltf-model="#rabbit-model"
+        position="23.5 3 24.6"
+        scale="0.01 0.01 0.01"
+        rotation="0 90 0">
+      </a-entity>
+
+    </a-entity>
+
+    <!-- Lighting -->
+    <a-light type="ambient"     color="#ffffff" intensity="0.6"></a-light>
+    <a-light type="directional" color="#ffeedd" intensity="0.8" position="2 4 1"></a-light>
+
+    <!-- Camera with orbit controls -->
+    <a-entity camera position="0 2 4"
+      orbit-controls="target: 0 0.5 0; minDistance: 1; maxDistance: 20; initialPosition: 0 2 4; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    // ============================================================
+    //  SCENE 4 — IDLE BOUNCE ANIMATION (same as Scene 1)
+    //  Both characters hop in place, out-of-sync, indefinitely.
+    // ============================================================
+
+    // 🐢 Turtle — slow, gentle, lazy hops
+    const P_IDLE_H    = 0.55;
+    const P_IDLE_FREQ = 1.1;
+    const P_IDLE_LEAN = 8;
+
+    // 🐇 Rabbit — fast, big clean hops
+    const K_IDLE_H   = 2.5;
+    const K_IDLE_FREQ = 2.4;
+    const K_PHASE_MS  = 420;   // phase offset so they're never in sync
+
+    let animRunning  = false;
+    let animStart    = null;
+    let animFrameId  = null;
+
+    // Frozen Scene 4 resting positions
+    const pagongFrom    = { x: 25.7, y: 1.3, z: 16.9 };
+    const pagongBaseRot = -100;
+    const kunehoFrom    = { x: 23.5, y: 3,   z: 24.6 };
+    const kunehoBaseRot = 90;
+
+    function idleBounceTick(timestamp) {
+      if (!animStart) animStart = timestamp;
+      const elapsed = timestamp - animStart;
+
+      // 🐢 Pagong — slow lazy hop
+      const rawP    = Math.sin(elapsed / 1000 * P_IDLE_FREQ * Math.PI);
+      const bounceP = Math.max(0, rawP) * P_IDLE_H;
+      const leanP   = (bounceP / P_IDLE_H) * P_IDLE_LEAN;
+      document.getElementById('pagong').setAttribute('position',
+        `${pagongFrom.x} ${pagongFrom.y + bounceP} ${pagongFrom.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `${-leanP} ${pagongBaseRot} 0`);
+
+      // 🐇 Kuneho — fast big hop
+      const elapsedK = elapsed + K_PHASE_MS;
+      const rawK     = Math.sin(elapsedK / 1000 * K_IDLE_FREQ * Math.PI);
+      const bounceK  = Math.max(0, rawK) * K_IDLE_H;
+      document.getElementById('kuneho').setAttribute('position',
+        `${kunehoFrom.x} ${kunehoFrom.y + bounceK} ${kunehoFrom.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${kunehoBaseRot} 0`);
+
+      if (animRunning) animFrameId = requestAnimationFrame(idleBounceTick);
+    }
+
+    function handleAnimBtn() {
+      animRunning ? stopAnimation() : startAnimation();
+    }
+
+    function startAnimation() {
+      if (animRunning) return;
+      animRunning = true;
+      animStart   = null;
+      playNarration();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.add('playing');
+      btn.innerHTML = '&#9646; &nbsp; Stop';
+
+      animFrameId = requestAnimationFrame(idleBounceTick);
+    }
+
+    function stopAnimation() {
+      animRunning = false;
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      stopNarration();
+
+      // Snap back to resting positions
+      document.getElementById('pagong').setAttribute('position',
+        `${pagongFrom.x} ${pagongFrom.y} ${pagongFrom.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${pagongBaseRot} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${kunehoFrom.x} ${kunehoFrom.y} ${kunehoFrom.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${kunehoBaseRot} 0`);
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#9654; &nbsp; Play Scene 4';
+    }
+
+    function playNarration() {
+      const narration = document.getElementById('narration');
+      narration.currentTime = 0;
+      narration.play().catch(() => {});
+    }
+
+    function stopNarration() {
+      const narration = document.getElementById('narration');
+      narration.pause();
+      narration.currentTime = 0;
+    }
+
+    document.getElementById('narration').addEventListener('ended', stopAnimation);
+
+    // Hide orbit hint after first interaction
+    document.addEventListener('mousedown', () => {
+      const hint = document.getElementById('orbit-hint');
+      if (hint) hint.style.opacity = '0';
+    }, { once: true });
+  </script>
+
+</body>
+
+</html>

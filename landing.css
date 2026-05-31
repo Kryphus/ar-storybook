@@ -18,6 +18,73 @@ body {
   background: #1a2a1a;
 }
 
+body.is-loading {
+  overflow: hidden;
+}
+
+body.is-loading .landing-page {
+  visibility: hidden;
+}
+
+/* ========================================
+   CUTE FIRST LOAD SCREEN
+   ======================================== */
+#app-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #fffdf7;
+  color: #2f3b2f;
+  transition: opacity 0.45s ease, visibility 0.45s ease;
+}
+
+body.is-ready #app-loader {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.loader-card {
+  width: min(320px, 100%);
+  padding: 24px 22px;
+  text-align: center;
+}
+
+.loader-lottie {
+  display: block;
+  width: min(198px, 68vw);
+  height: 96px;
+  margin: 0 auto -8px;
+}
+
+.loader-title {
+  font-family: 'Fredoka', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: #37523b;
+}
+
+.loader-track {
+  height: 9px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: #e9eadf;
+}
+
+#loader-bar {
+  display: block;
+  width: 10%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8bd26f, #f6d365);
+  transition: width 0.25s ease;
+}
+
 /* ========================================
    LANDING PAGE CONTAINER
    ======================================== */

@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Pahina 10 AR — Si Pagong at si Kuneho</title>
+  <meta name="description" content="AR Scene 10: Ang Aral. Point your camera at Pahina 10.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- A-Frame must load before MindAR's A-Frame integration. -->
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #000;
+    }
+
+    #startup-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        linear-gradient(rgba(5, 7, 18, 0.76), rgba(5, 7, 18, 0.88)),
+        url("../../assets/images/bghero.png") center / cover no-repeat;
+      color: white;
+      text-align: center;
+      font-family: 'Fredoka', sans-serif;
+      transition: opacity 0.45s ease, visibility 0.45s ease;
+    }
+
+    #startup-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #startup-panel {
+      width: min(360px, 100%);
+      padding: 24px 22px;
+    }
+
+    #startup-panel h1 {
+      font-size: 1.55rem;
+      line-height: 1.15;
+      margin-bottom: 8px;
+      color: #fffdf7;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.45);
+    }
+
+    #startup-panel p {
+      color: rgba(255,255,255,0.76);
+      font-size: 0.92rem;
+      line-height: 1.45;
+      margin-bottom: 18px;
+    }
+
+    #startup-status {
+      min-height: 20px;
+      color: #a3e635;
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.42);
+    }
+
+    #startup-progress {
+      width: 100%;
+      height: 8px;
+      margin-bottom: 18px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(255,255,255,0.15);
+    }
+
+    #startup-progress-bar {
+      width: 16%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #a3e635, #22c55e);
+      transition: width 0.3s ease;
+    }
+
+    #startup-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    #preview-startup-btn,
+    #start-camera-btn {
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 20px;
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(102,126,234,0.45);
+    }
+
+    #preview-startup-btn {
+      display: none;
+      background: rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.9);
+      border: 1px solid rgba(255,255,255,0.18);
+      box-shadow: none;
+    }
+
+    #preview-startup-btn.visible {
+      display: block;
+    }
+
+    #start-camera-btn:disabled {
+      cursor: wait;
+      opacity: 0.55;
+      box-shadow: none;
+    }
+
+    /* MindAR renders its own fullscreen canvas — keep it under everything */
+    a-scene {
+      position: fixed !important;
+      top: 0; left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 1 !important;
+    }
+
+    canvas.a-canvas {
+      position: fixed !important;
+      background: transparent !important;
+      z-index: 2 !important;
+    }
+
+    video {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: 0 !important;
+    }
+
+    /* ===== UI OVERLAY (sits above the AR canvas) ===== */
+    #ui-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      pointer-events: none; /* let touches pass through to AR by default */
+    }
+
+    /* All tappable overlay elements get pointer-events back */
+    #ui-overlay a,
+    #ui-overlay button,
+    #ui-overlay #debug-panel,
+    #ui-overlay #top-actions {
+      pointer-events: auto;
+    }
+
+    /* Back button — top left */
+    #back-btn {
+      position: absolute;
+      top: 14px; left: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 22px;
+      background: rgba(10,10,26,0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: rgba(255,255,255,0.9);
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.15s;
+    }
+    #back-btn:active { transform: scale(0.95); }
+
+    /* Tweak toggle button — top right */
+    #top-actions {
+      position: absolute;
+      top: 14px; right: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #top-actions a,
+    #top-actions button {
+      padding: 9px 14px;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 22px;
+      background: rgba(10,10,26,0.75);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: rgba(255,255,255,0.75);
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    #top-actions a:active,
+    #top-actions button:active {
+      transform: scale(0.95);
+    }
+
+    /* Scan hint — shown while waiting for marker */
+    #scan-hint {
+      position: absolute;
+      bottom: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.65);
+      color: white;
+      padding: 10px 22px;
+      border-radius: 24px;
+      font-size: 0.88rem;
+      white-space: nowrap;
+      transition: opacity 0.4s;
+      opacity: 0;
+    }
+
+    /* Play / Stop button — bottom center */
+    #anim-btn {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      display: none;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      color: white;
+      border-radius: 50px;
+      padding: 14px 40px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.4px;
+      box-shadow: 0 4px 20px rgba(102,126,234,0.55);
+      transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
+      white-space: nowrap;
+    }
+    #anim-btn:active { transform: translateX(-50%) scale(0.95); }
+    #anim-btn.playing {
+      background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
+      box-shadow: 0 4px 20px rgba(240,84,84,0.45);
+    }
+
+    /* ===== COLLAPSIBLE DEBUG PANEL ===== */
+    #debug-panel {
+      display: none;
+      position: absolute;
+      top: 58px; right: 10px;
+      width: 230px;
+      max-height: 75vh;
+      overflow-y: auto;
+      background: rgba(10,10,26,0.92);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 12px;
+      color: white;
+      font-size: 0.73rem;
+    }
+    #debug-panel.open { display: block; }
+
+    #debug-panel hr {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      margin: 10px 0 4px;
+    }
+    #debug-panel label {
+      display: block;
+      margin-top: 8px;
+      margin-bottom: 2px;
+      color: rgba(255,255,255,0.7);
+    }
+    #debug-panel input[type=range] { width: 100%; }
+    #debug-panel .value {
+      float: right;
+      color: #a78bfa;
+      font-weight: 600;
+    }
+    #copy-btn {
+      margin-top: 10px;
+      width: 100%;
+      padding: 8px;
+      border: none;
+      border-radius: 8px;
+      background: #667eea;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #copy-btn:active { opacity: 0.7; }
+
+    /* ===== STATUS LOG (diagnostic — visible on screen) ===== */
+    #status-log {
+      position: absolute;
+      top: 60px; left: 14px; right: 14px;
+      background: rgba(0,0,0,0.82);
+      color: #a3e635;
+      font-size: 0.72rem;
+      font-family: monospace;
+      padding: 10px 12px;
+      border-radius: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 200;
+      line-height: 1.5;
+      word-break: break-all;
+    }
+
+    /* ===== MindAR built-in overlay tweaks ===== */
+    /* Push MindAR's scan frame below our nav bar */
+    .mindar-ui-overlay {
+      top: 56px !important;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="startup-screen">
+    <div id="startup-panel">
+      <h1>Pahina 10</h1>
+      <div id="startup-status">Loading AR files...</div>
+      <div id="startup-progress" aria-hidden="true">
+        <div id="startup-progress-bar"></div>
+      </div>
+      <div id="startup-actions">
+        <button id="start-camera-btn" onclick="startCamera()" disabled>Start Camera</button>
+        <a id="preview-startup-btn" href="./index.html">Preview</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!--  UI OVERLAY                                   -->
+  <!-- ============================================ -->
+  <div id="ui-overlay">
+
+    <a href="../../pages.html" id="back-btn">← Pahina</a>
+
+    <div id="top-actions">
+      <a href="./index.html" id="preview-btn">Preview</a>
+      <button id="toggle-debug" onclick="toggleDebug()">⚙️ Tweak</button>
+    </div>
+
+    <!-- Diagnostic log — remove once AR is confirmed working -->
+    <div id="status-log">Preparing AR...<br></div>
+
+    <div id="scan-hint">📷 Itutok sa Pahina 10</div>
+
+    <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; I-play</button>
+
+    <!-- ====== DEBUG PANEL for AR position tuning ====== -->
+    <div id="debug-panel">
+      <strong style="color:#a78bfa;">🔧 AR Position Tuning</strong>
+      <p style="opacity:0.45;font-size:0.62rem;margin-top:4px;">
+        Tune while pointing at the marker, then tap Copy.
+      </p>
+
+      <hr>
+      <label><b>📐 Scene Scale & Height</b></label>
+
+      <label>Outer Scale:
+        <span class="value" id="val-outer-scale">0.025</span>
+      </label>
+      <input type="range" id="slider-outer-scale"
+        min="0.001" max="0.1" step="0.001" value="0.025"
+        oninput="updateAR()">
+
+      <label>Outer Y (height above page):
+        <span class="value" id="val-outer-y">0.00</span>
+      </label>
+      <input type="range" id="slider-outer-y"
+        min="-0.5" max="0.5" step="0.005" value="0"
+        oninput="updateAR()">
+
+      <label>Diorama Base Y:
+        <span class="value" id="val-diorama-y">-4.00</span>
+      </label>
+      <input type="range" id="slider-diorama-y"
+        min="-100" max="100" step="0.1" value="-4.0"
+        oninput="updateAR()">
+
+      <hr>
+      <label><b>🐢 Pagong</b></label>
+
+      <label>Scale: <span class="value" id="val-pagong-s">0.500</span></label>
+      <input type="range" id="slider-pagong-s"
+        min="0.001" max="10" step="0.001" value="0.5" oninput="updateAR()">
+
+      <label>X: <span class="value" id="val-pagong-x">-6.00</span></label>
+      <input type="range" id="slider-pagong-x"
+        min="-100" max="100" step="0.1" value="-6" oninput="updateAR()">
+
+      <label>Y: <span class="value" id="val-pagong-y">3.00</span></label>
+      <input type="range" id="slider-pagong-y"
+        min="-100" max="100" step="0.1" value="3" oninput="updateAR()">
+
+      <label>Z: <span class="value" id="val-pagong-z">15.80</span></label>
+      <input type="range" id="slider-pagong-z"
+        min="-100" max="100" step="0.1" value="15.8" oninput="updateAR()">
+
+      <label>Rotation: <span class="value" id="val-pagong-rot">85</span>°</label>
+      <input type="range" id="slider-pagong-rot"
+        min="-180" max="180" step="5" value="85" oninput="updateAR()">
+
+      <hr>
+      <label><b>🐇 Kuneho</b></label>
+
+      <label>Scale: <span class="value" id="val-kuneho-s">0.010</span></label>
+      <input type="range" id="slider-kuneho-s"
+        min="0.001" max="10" step="0.001" value="0.01" oninput="updateAR()">
+
+      <label>X: <span class="value" id="val-kuneho-x">6.00</span></label>
+      <input type="range" id="slider-kuneho-x"
+        min="-100" max="100" step="0.1" value="6" oninput="updateAR()">
+
+      <label>Y: <span class="value" id="val-kuneho-y">5.00</span></label>
+      <input type="range" id="slider-kuneho-y"
+        min="-100" max="100" step="0.1" value="5" oninput="updateAR()">
+
+      <label>Z: <span class="value" id="val-kuneho-z">16.90</span></label>
+      <input type="range" id="slider-kuneho-z"
+        min="-100" max="100" step="0.1" value="16.9" oninput="updateAR()">
+
+      <label>Rotation: <span class="value" id="val-kuneho-rot">90</span>°</label>
+      <input type="range" id="slider-kuneho-rot"
+        min="-180" max="180" step="5" value="90" oninput="updateAR()">
+
+      <button id="copy-btn" onclick="copyARValues()">📋 Copy AR Values</button>
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!--  NARRATION AUDIO                              -->
+  <!-- ============================================ -->
+  <audio id="narration" src="../../assets/audio/scene10.mp3" preload="auto"></audio>
+
+  <!-- ============================================ -->
+  <!--  AR SCENE (MindAR)                            -->
+  <!-- ============================================ -->
+  <!--
+    imageTargetSrc: the compiled .mind file for Pahina 10
+    autoStart: false — we start manually after scene loads
+    uiLoading / uiScanning: use MindAR's built-in loading + scan UI
+  -->
+  <a-scene
+    mindar-image="imageTargetSrc: ../../assets/images/markers/targets-scene10.mind; autoStart: false; uiLoading: yes; uiScanning: yes; uiError: yes;"
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-assets>
+      <!-- Diorama is in this scene's folder -->
+      <a-asset-item id="diorama-model" src="./diorama.glb"></a-asset-item>
+      <!-- Characters are shared project-wide -->
+      <a-asset-item id="turtle-model"  src="../../models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model"  src="../../models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <!--
+      targetIndex: 0  =  page10.jpg in targets-scene10.mind
+      When the camera sees page 10 of the storybook, this entity becomes visible.
+    -->
+    <a-entity mindar-image-target="targetIndex: 0" id="ar-target">
+
+      <!--
+        diorama-scene: the outer container.
+        scale="0.025" makes everything fit over a physical book page.
+        ⚠️  Tune this with the debug panel — AR coordinate space differs
+            from the desktop preview. Start here and adjust with ⚙️ Tweak.
+      -->
+      <a-entity id="diorama-scene"
+        position="0 0 0"
+        scale="0.025 0.025 0.025">
+
+        <!-- DIORAMA BASE — Scene 10 diorama -->
+        <a-entity id="diorama-base"
+          gltf-model="#diorama-model"
+          scale="2.696 2.696 2.696"
+          position="0 -4.0 0">
+        </a-entity>
+
+        <!-- TURTLE (Pagong) — Scene 10 position -->
+        <a-entity id="pagong"
+          gltf-model="#turtle-model"
+          position="-6 3 15.8"
+          scale="0.5 0.5 0.5"
+          rotation="0 85 0">
+        </a-entity>
+
+        <!-- RABBIT (Kuneho) — Scene 10 position -->
+        <a-entity id="kuneho"
+          gltf-model="#rabbit-model"
+          position="6 5 16.9"
+          scale="0.01 0.01 0.01"
+          rotation="0 90 0">
+        </a-entity>
+
+      </a-entity>
+    </a-entity>
+    <!-- END ar-target -->
+
+    <!-- Lights -->
+    <a-light type="ambient"     color="#ffffff" intensity="0.7"></a-light>
+    <a-light type="directional" color="#ffeedd" intensity="0.9" position="0 5 5"></a-light>
+
+    <!-- MindAR needs a plain <a-camera> — no orbit controls in AR -->
+    <a-camera></a-camera>
+
+  </a-scene>
+
+  <script>
+    // ============================================================
+    //  DIAGNOSTIC LOGGER
+    // ============================================================
+    function log(msg) {
+      const el = document.getElementById('status-log');
+      if (el) el.innerHTML += msg + '<br>';
+      console.log('[AR]', msg);
+    }
+
+    const startupScreen = document.getElementById('startup-screen');
+    const startupStatus = document.getElementById('startup-status');
+    const startupBar = document.getElementById('startup-progress-bar');
+    const startCameraBtn = document.getElementById('start-camera-btn');
+    const previewStartupBtn = document.getElementById('preview-startup-btn');
+    const assetsEl = document.querySelector('a-assets');
+    let markerLoaded = false;
+    let sceneLoaded = false;
+    let assetsLoaded = false;
+    let cameraStarted = false;
+
+    function setStartupStatus(message, progress) {
+      startupStatus.textContent = message;
+      startupBar.style.width = progress + '%';
+      log(message);
+    }
+
+    function updateStartButton() {
+      if (markerLoaded && sceneLoaded && assetsLoaded && !cameraStarted) {
+        startCameraBtn.disabled = false;
+        startCameraBtn.textContent = 'Start Camera';
+        previewStartupBtn.classList.add('visible');
+        setStartupStatus('Ready. Tap Start Camera.', 100);
+      }
+    }
+
+    async function preloadMarkerFile() {
+      setStartupStatus('Loading page marker...', 30);
+      try {
+        const response = await fetch('../../assets/images/markers/targets-scene10.mind', { cache: 'force-cache' });
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        await response.arrayBuffer();
+        markerLoaded = true;
+        setStartupStatus('Marker ready.', 65);
+        if (!sceneLoaded || !assetsLoaded) {
+          setStartupStatus('Loading AR engine and 3D models...', 70);
+        }
+      } catch (error) {
+        startCameraBtn.disabled = true;
+        startCameraBtn.textContent = 'Marker failed to load';
+        setStartupStatus('Could not load marker file. Serve the app from localhost or HTTPS.', 100);
+        log('Marker preload error: ' + error.message);
+      }
+      updateStartButton();
+    }
+
+    async function startCamera() {
+      if (cameraStarted || startCameraBtn.disabled) return;
+      cameraStarted = true;
+      startCameraBtn.disabled = true;
+      startCameraBtn.textContent = 'Starting camera...';
+      setStartupStatus('Starting camera...', 100);
+
+      try {
+        const arSystem = sceneEl.systems['mindar-image-system'];
+        if (!arSystem) throw new Error('MindAR system is not ready');
+        await arSystem.start();
+      } catch (error) {
+        cameraStarted = false;
+        startCameraBtn.disabled = false;
+        startCameraBtn.textContent = 'Try Again';
+        setStartupStatus('Camera could not start. Check browser permission.', 100);
+        log('Camera start error: ' + error.message);
+      }
+    }
+
+    // Catch any uncaught JS errors
+    window.addEventListener('error', (e) => {
+      log('❌ JS Error: ' + e.message + ' (' + e.filename?.split('/').pop() + ':' + e.lineno + ')');
+    });
+
+    // ============================================================
+    //  MARKER EVENTS — auto-play when page is detected
+    // ============================================================
+    const arTarget = document.getElementById('ar-target');
+    const sceneEl  = document.querySelector('a-scene');
+
+    sceneEl.addEventListener('arReady', () => {
+      log('MindAR ready - camera active.');
+      startupScreen.classList.add('hidden');
+      document.getElementById('scan-hint').style.opacity = '1';
+      document.getElementById('anim-btn').style.display = 'block';
+      setTimeout(checkCameraFeed, 1200);
+    });
+    sceneEl.addEventListener('arError', (e) => {
+      cameraStarted = false;
+      startCameraBtn.disabled = false;
+      startCameraBtn.textContent = 'Try Again';
+      setStartupStatus('AR could not start. Check camera permission.', 100);
+      log('MindAR error: ' + JSON.stringify(e.detail));
+    });
+    sceneEl.addEventListener('loaded',  () => {
+      sceneLoaded = true;
+      setStartupStatus('3D scene ready.', 78);
+      updateStartButton();
+    });
+
+    assetsEl.addEventListener('loaded', () => {
+      assetsLoaded = true;
+      setStartupStatus('3D models ready.', 88);
+      updateStartButton();
+    });
+
+    if (sceneEl.hasLoaded) {
+      sceneLoaded = true;
+    }
+
+    if (assetsEl.hasLoaded) {
+      assetsLoaded = true;
+    }
+
+    updateStartButton();
+    preloadMarkerFile();
+
+    setTimeout(() => {
+      if (!cameraStarted && (!sceneLoaded || !assetsLoaded)) {
+        setStartupStatus('Still loading AR engine or models. Check internet if this gets stuck.', 92);
+      }
+    }, 12000);
+
+    arTarget.addEventListener('targetFound', () => {
+      document.getElementById('scan-hint').style.opacity = '0';
+      // Auto-start animation + narration when the book page is detected
+      const audio = document.getElementById('narration');
+      if (!animationFinished || audio.ended || audio.currentTime === 0) {
+        startAnimation();
+      }
+      startNarration();
+    });
+
+    arTarget.addEventListener('targetLost', () => {
+      document.getElementById('scan-hint').style.opacity = '1';
+      // Pause narration when page is no longer visible (animation keeps going)
+      pauseNarration();
+    });
+
+    function checkCameraFeed() {
+      const videos = Array.from(document.querySelectorAll('video'));
+      const activeVideo = videos.find((video) => video.readyState >= 2 && video.videoWidth > 0);
+      if (activeVideo) {
+        log(`Camera feed visible: ${activeVideo.videoWidth}x${activeVideo.videoHeight}`);
+      } else {
+        log('Camera feed not visible yet. If the screen is black, reload and try the phone browser directly.');
+      }
+    }
+
+    ['diorama-base', 'pagong', 'kuneho'].forEach((id) => {
+      const model = document.getElementById(id);
+      model.addEventListener('model-loaded', () => log(`${id} model loaded.`));
+      model.addEventListener('model-error', (event) => {
+        log(`${id} model failed: ${event.detail?.src || 'unknown source'}`);
+      });
+    });
+
+    // ============================================================
+    //  NARRATION
+    // ============================================================
+    function startNarration(restart = false) {
+      const audio = document.getElementById('narration');
+      if (restart || audio.ended) audio.currentTime = 0;
+      audio.play().catch(() => {
+        // Autoplay blocked — user will need to tap Play manually
+        console.warn('Narration autoplay blocked by browser.');
+      });
+    }
+
+    function pauseNarration() {
+      document.getElementById('narration').pause();
+    }
+
+    function stopNarration() {
+      const audio = document.getElementById('narration');
+      audio.pause();
+      audio.currentTime = 0;
+    }
+
+    // ============================================================
+    //  SCENE 10 - THE LESSON
+    // ============================================================
+
+    const T_K_TALK_END = 3000;
+    const T_P_TALK_END = 6000;
+    const T_DONE = 10000;
+    const TALK_FREQ = 6.0;
+    const TALK_H = 0.6;
+    const HAPPY_JUMP_H = 1.2;
+    const P_JUMP_FREQ = 2.4;
+    const K_JUMP_FREQ = 2.7;
+    const K_JUMP_OFFSET = 0.45;
+
+    const P_POSE = { x: -6, y: 3, z: 15.8, rot: 85 };
+    const K_POSE = { x: 6, y: 5, z: 16.9, rot: 90 };
+
+    let animRunning = false;
+    let animStart   = null;
+    let animFrameId = null;
+    let animationFinished = false;
+
+    function scene10Tick(timestamp) {
+      if (!animStart) animStart = timestamp;
+      const elapsed = timestamp - animStart;
+
+      const pagong = document.getElementById('pagong');
+      const kuneho = document.getElementById('kuneho');
+
+      if (elapsed < T_K_TALK_END) {
+        const bounce = Math.max(0, Math.sin(elapsed / 1000 * TALK_FREQ * Math.PI)) * TALK_H;
+        pagong.setAttribute('position', `${P_POSE.x} ${P_POSE.y} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position',
+          `${K_POSE.x} ${(K_POSE.y + bounce).toFixed(3)} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else if (elapsed < T_P_TALK_END) {
+        const localElapsed = elapsed - T_K_TALK_END;
+        const bounce = Math.max(0, Math.sin(localElapsed / 1000 * TALK_FREQ * Math.PI)) * TALK_H;
+        pagong.setAttribute('position',
+          `${P_POSE.x} ${(P_POSE.y + bounce).toFixed(3)} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position', `${K_POSE.x} ${K_POSE.y} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else if (elapsed < T_DONE) {
+        const localElapsed = elapsed - T_P_TALK_END;
+        const pJump = Math.abs(Math.sin(localElapsed / 1000 * P_JUMP_FREQ * Math.PI)) * HAPPY_JUMP_H;
+        const kJump = Math.abs(Math.sin((localElapsed / 1000 * K_JUMP_FREQ + K_JUMP_OFFSET) * Math.PI)) * HAPPY_JUMP_H;
+        pagong.setAttribute('position',
+          `${P_POSE.x} ${(P_POSE.y + pJump).toFixed(3)} ${P_POSE.z}`);
+        pagong.setAttribute('rotation', `0 ${P_POSE.rot} 0`);
+        kuneho.setAttribute('position',
+          `${K_POSE.x} ${(K_POSE.y + kJump).toFixed(3)} ${K_POSE.z}`);
+        kuneho.setAttribute('rotation', `0 ${K_POSE.rot} 0`);
+      } else {
+        resetToStart();
+      }
+
+      if (elapsed >= T_DONE) {
+        finishAnimation();
+        return;
+      }
+
+      if (animRunning) animFrameId = requestAnimationFrame(scene10Tick);
+    }
+
+    // ============================================================
+    //  PLAY / STOP
+    // ============================================================
+    function handleAnimBtn() {
+      animRunning ? stopAnimation() : startAnimation();
+    }
+
+    function startAnimation() {
+      if (animRunning) return;
+      animRunning = true;
+      animStart   = null;
+      animationFinished = false;
+
+      resetToStart();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.add('playing');
+      btn.innerHTML = '&#9646; &nbsp; Ihinto';
+
+      animFrameId = requestAnimationFrame(scene10Tick);
+
+      // Also start narration when user manually taps Play
+      startNarration(true);
+    }
+
+    function finishAnimation() {
+      animRunning = true;
+      animationFinished = true;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      resetToStart();
+
+      if (document.getElementById('narration').ended) stopAnimation();
+    }
+
+    function resetToStart() {
+      document.getElementById('pagong').setAttribute('position',
+        `${P_POSE.x} ${P_POSE.y} ${P_POSE.z}`);
+      document.getElementById('pagong').setAttribute('rotation',
+        `0 ${P_POSE.rot} 0`);
+      document.getElementById('kuneho').setAttribute('position',
+        `${K_POSE.x} ${K_POSE.y} ${K_POSE.z}`);
+      document.getElementById('kuneho').setAttribute('rotation',
+        `0 ${K_POSE.rot} 0`);
+    }
+
+    function stopAnimation() {
+      animRunning = false;
+      animationFinished = false;
+      if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+
+      resetToStart();
+
+      const btn = document.getElementById('anim-btn');
+      btn.classList.remove('playing');
+      btn.innerHTML = '&#9654; &nbsp; I-play';
+
+      stopNarration();
+    }
+
+    document.getElementById('narration').addEventListener('ended', stopAnimation);
+    // ============================================================
+    //  DEBUG PANEL — live AR position tuning
+    //  Use while physically pointing the camera at the book page.
+    //  Once satisfied, tap Copy and paste final values into the
+    //  hardcoded positions above (P_POSE, K_POSE, etc.)
+    // ============================================================
+    function toggleDebug() {
+      document.getElementById('debug-panel').classList.toggle('open');
+    }
+
+    function updateAR() {
+      const outerScale = parseFloat(document.getElementById('slider-outer-scale').value);
+      const outerY     = parseFloat(document.getElementById('slider-outer-y').value);
+      const diY        = parseFloat(document.getElementById('slider-diorama-y').value);
+
+      const pS  = parseFloat(document.getElementById('slider-pagong-s').value);
+      const pX  = parseFloat(document.getElementById('slider-pagong-x').value);
+      const pY  = parseFloat(document.getElementById('slider-pagong-y').value);
+      const pZ  = parseFloat(document.getElementById('slider-pagong-z').value);
+      const pR  = parseFloat(document.getElementById('slider-pagong-rot').value);
+
+      const kS  = parseFloat(document.getElementById('slider-kuneho-s').value);
+      const kX  = parseFloat(document.getElementById('slider-kuneho-x').value);
+      const kY  = parseFloat(document.getElementById('slider-kuneho-y').value);
+      const kZ  = parseFloat(document.getElementById('slider-kuneho-z').value);
+      const kR  = parseFloat(document.getElementById('slider-kuneho-rot').value);
+
+      // Update display labels
+      document.getElementById('val-outer-scale').textContent = outerScale.toFixed(3);
+      document.getElementById('val-outer-y').textContent     = outerY.toFixed(3);
+      document.getElementById('val-diorama-y').textContent   = diY.toFixed(2);
+      document.getElementById('val-pagong-s').textContent    = pS.toFixed(3);
+      document.getElementById('val-pagong-x').textContent    = pX.toFixed(2);
+      document.getElementById('val-pagong-y').textContent    = pY.toFixed(2);
+      document.getElementById('val-pagong-z').textContent    = pZ.toFixed(2);
+      document.getElementById('val-pagong-rot').textContent  = pR.toFixed(0);
+      document.getElementById('val-kuneho-s').textContent    = kS.toFixed(3);
+      document.getElementById('val-kuneho-x').textContent    = kX.toFixed(2);
+      document.getElementById('val-kuneho-y').textContent    = kY.toFixed(2);
+      document.getElementById('val-kuneho-z').textContent    = kZ.toFixed(2);
+      document.getElementById('val-kuneho-rot').textContent  = kR.toFixed(0);
+
+      // Apply to scene
+      document.getElementById('diorama-scene').setAttribute('scale',
+        `${outerScale} ${outerScale} ${outerScale}`);
+      document.getElementById('diorama-scene').setAttribute('position',
+        `0 ${outerY} 0`);
+      document.getElementById('diorama-base').setAttribute('position',
+        `0 ${diY} 0`);
+
+      document.getElementById('pagong').setAttribute('scale', `${pS} ${pS} ${pS}`);
+      document.getElementById('pagong').setAttribute('position', `${pX} ${pY} ${pZ}`);
+      document.getElementById('pagong').setAttribute('rotation', `0 ${pR} 0`);
+
+      document.getElementById('kuneho').setAttribute('scale', `${kS} ${kS} ${kS}`);
+      document.getElementById('kuneho').setAttribute('position', `${kX} ${kY} ${kZ}`);
+      document.getElementById('kuneho').setAttribute('rotation', `0 ${kR} 0`);
+    }
+
+    function copyARValues() {
+      const vals =
+        `AR Scene 10 — tuned values\n` +
+        `Outer scale: ${document.getElementById('slider-outer-scale').value}\n` +
+        `Outer Y: ${document.getElementById('slider-outer-y').value}\n` +
+        `Diorama base Y: ${document.getElementById('slider-diorama-y').value}\n` +
+        `Pagong:  scale=${document.getElementById('slider-pagong-s').value}, ` +
+          `pos=(${document.getElementById('slider-pagong-x').value}, ` +
+               `${document.getElementById('slider-pagong-y').value}, ` +
+               `${document.getElementById('slider-pagong-z').value}), ` +
+          `rot=${document.getElementById('slider-pagong-rot').value}\n` +
+        `Kuneho:  scale=${document.getElementById('slider-kuneho-s').value}, ` +
+          `pos=(${document.getElementById('slider-kuneho-x').value}, ` +
+               `${document.getElementById('slider-kuneho-y').value}, ` +
+               `${document.getElementById('slider-kuneho-z').value}), ` +
+          `rot=${document.getElementById('slider-kuneho-rot').value}`;
+      navigator.clipboard.writeText(vals).then(() => alert('AR values copied!'));
+    }
+  </script>
+
+</body>
+</html>
