@@ -33,6 +33,7 @@
       <div class="loader-track" aria-hidden="true">
         <span id="loader-bar"></span>
       </div>
+      <p class="loader-size" id="loader-size">0.0 MB / 37.3 MB</p>
     </div>
   </div>
 
@@ -138,14 +139,63 @@
     ];
 
     const loaderBar = document.getElementById('loader-bar');
+    const loaderSize = document.getElementById('loader-size');
     const minLoaderMs = 900;
     const loaderStartedAt = performance.now();
     let loadedCount = 0;
     const totalAssets = visibleImagePreloadFiles.length + pagePreloadFiles.length + arPreloadFiles.length;
+    const assetByteSizes = {
+      'assets/images/cat-loading.json': 65934,
+      'assets/images/bghero.png': 2023357,
+      'assets/images/titletext.png': 2259825,
+      'assets/images/woodenbanner.png': 3286944,
+      'assets/images/markers/page1.jpg': 340527,
+      'assets/images/markers/page2.jpg': 341565,
+      'assets/images/markers/page3.jpg': 314705,
+      'assets/images/markers/page4.jpg': 359794,
+      'assets/images/markers/page5.jpg': 372749,
+      'assets/images/markers/page6.jpg': 332165,
+      'assets/images/markers/page7.jpg': 318553,
+      'assets/images/markers/page8.jpg': 310569,
+      'assets/images/markers/page9.jpg': 352295,
+      'assets/images/markers/page10.jpg': 346113,
+      'pages.html': 9359,
+      'pages.css': 6691,
+      'assets/audio/bgmusic.mp3': 7517612,
+      'assets/images/markers/targets-scene1.mind': 980472,
+      'assets/images/markers/targets-scene2.mind': 1020800,
+      'assets/images/markers/targets-scene3.mind': 971232,
+      'assets/images/markers/targets-scene4.mind': 1008997,
+      'assets/images/markers/targets-scene5.mind': 1024827,
+      'scenes/scene1/diorama.glb': 1092612,
+      'scenes/scene2/diorama.glb': 2118620,
+      'scenes/scene3/diorama.glb': 2118620,
+      'scenes/scene4/diorama.glb': 4601452,
+      'scenes/scene5/diorama.glb': 4601452,
+      'models/turtle.glb': 115884,
+      'models/rabbit.glb': 31180,
+      'assets/audio/scene1.mp3': 167599,
+      'assets/audio/scene2.mp3': 174878,
+      'assets/audio/scene3.mp3': 169916,
+      'assets/audio/scene4.mp3': 228459,
+      'assets/audio/scene5.mp3': 154328
+    };
+    const totalPreloadBytes = Object.values(assetByteSizes).reduce((sum, bytes) => sum + bytes, 0);
+    let loadedBytes = 0;
 
-    function markAssetLoaded() {
+    function formatMB(bytes) {
+      return (bytes / 1024 / 1024).toFixed(1);
+    }
+
+    function updateLoaderSize() {
+      loaderSize.textContent = `${formatMB(loadedBytes)} MB / ${formatMB(totalPreloadBytes)} MB`;
+    }
+
+    function markAssetLoaded(url) {
       loadedCount += 1;
+      loadedBytes = Math.min(totalPreloadBytes, loadedBytes + (assetByteSizes[url] || 0));
       loaderBar.style.width = Math.min(96, 8 + Math.round((loadedCount / totalAssets) * 88)) + '%';
+      updateLoaderSize();
     }
 
     function preloadImage(url) {
@@ -157,11 +207,11 @@
           } catch (_) {
             // The image is already loaded; decoding failures should not trap users.
           }
-          markAssetLoaded();
+          markAssetLoaded(url);
           resolve();
         };
         img.onerror = () => {
-          markAssetLoaded();
+          markAssetLoaded(url);
           resolve();
         };
         img.src = url;
@@ -173,7 +223,7 @@
         .catch(() => {
           // The destination pages still perform their own loading and error reporting.
         })
-        .finally(markAssetLoaded);
+        .finally(() => markAssetLoaded(url));
     }
 
     function assignLandingImageSources() {
@@ -219,6 +269,8 @@
 
       setTimeout(() => {
         loaderBar.style.width = '100%';
+        loadedBytes = totalPreloadBytes;
+        updateLoaderSize();
         document.body.classList.remove('is-loading');
         document.body.classList.add('is-ready');
       }, remaining);

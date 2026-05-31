@@ -137,6 +137,22 @@
       top: 0; left: 0;
       width: 100vw !important;
       height: 100vh !important;
+      z-index: 1 !important;
+    }
+
+    canvas.a-canvas {
+      position: fixed !important;
+      background: transparent !important;
+      z-index: 2 !important;
+    }
+
+    video {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: 0 !important;
     }
 
     /* ===== UI OVERLAY (sits above the AR canvas) ===== */

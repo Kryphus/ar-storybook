@@ -85,6 +85,14 @@ body.is-ready #app-loader {
   transition: width 0.25s ease;
 }
 
+.loader-size {
+  margin-top: 9px;
+  color: #6d7769;
+  font-family: 'Fredoka', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 /* ========================================
    LANDING PAGE CONTAINER
    ======================================== */
