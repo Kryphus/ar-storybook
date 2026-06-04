@@ -174,11 +174,32 @@
         </div>
       </div>
 
+      <div class="page-card extra-page-card" id="extra-page-card" onclick="goToAR('extra')" hidden>
+        <div class="page-thumb">
+          <img src="assets/images/markers/extra-scene.png" alt="Secret Scene">
+        </div>
+        <div class="page-info">
+          <span class="page-num">Pahina Extra</span>
+          <span class="page-label">???</span>
+        </div>
+      </div>
+
     </div>
 
   </div>
 
   <script>
+    const EXTRA_SCENE_UNLOCK_KEY = 'arStorybookExtraSceneUnlocked';
+    const extraPageCard = document.getElementById('extra-page-card');
+
+    function isExtraSceneUnlocked() {
+      return localStorage.getItem(EXTRA_SCENE_UNLOCK_KEY) === 'true';
+    }
+
+    if (isExtraSceneUnlocked()) {
+      extraPageCard.hidden = false;
+    }
+
     const preloadFiles = [
       'assets/images/markers/targets-scene1.mind',
       'assets/images/markers/targets-scene2.mind',
@@ -230,6 +251,12 @@
     }
 
     function goToAR(page) {
+      if (page === 'extra') {
+        if (!isExtraSceneUnlocked()) return;
+        window.location.href = 'scenes/extrascene/ar.html';
+        return;
+      }
+
       const p = page || 1;
       // AR viewers live at scenes/sceneN/ar.html
       // Scenes without an AR file yet fall back to the preview viewer

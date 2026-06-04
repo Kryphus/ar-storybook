@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <title>Secret Scene - Si Pagong at si Kuneho</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'Fredoka', "Segoe UI", sans-serif;
+      background: #f7d9a6;
+    }
+
+    #loader {
+      position: fixed;
+      inset: 0;
+      z-index: 800;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: white;
+      background:
+        linear-gradient(rgba(5, 7, 18, 0.76), rgba(5, 7, 18, 0.88)),
+        url("../../assets/images/bghero.png") center / cover no-repeat;
+      text-align: center;
+      font-family: 'Fredoka', sans-serif;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    body.is-ready #loader {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #loader-content {
+      width: min(360px, 100%);
+      padding: 24px 22px;
+    }
+
+    #loader-title {
+      margin: 0 0 14px;
+      color: #fffdf7;
+      font-size: 1.6rem;
+      font-weight: 800;
+      line-height: 1.15;
+      text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+    }
+
+    #loader-status {
+      min-height: 20px;
+      margin-bottom: 14px;
+      color: #f7f3dc;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.42);
+    }
+
+    #loader-track {
+      width: 100%;
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    #loader-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #a3e635, #22c55e);
+      transition: width 0.3s ease;
+    }
+
+    body:not(.is-ready) #music-player,
+    body:not(.is-ready) a-scene {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    #music-player {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      z-index: 220;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transform: translateX(-50%);
+    }
+
+    #player-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 14px 36px rgba(92, 64, 28, 0.16);
+      backdrop-filter: blur(14px);
+    }
+
+    .player-btn {
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 999px;
+      color: #3b2507;
+      background: #fff7e6;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        0 5px 0 rgba(214, 137, 38, 0.45),
+        0 12px 20px rgba(180, 83, 9, 0.12);
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+
+    .player-btn:hover {
+      background: #ffedc2;
+      transform: translateY(-1px) scale(1.04);
+    }
+
+    .player-btn:active {
+      transform: translateY(2px) scale(0.94);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 2px 0 rgba(214, 137, 38, 0.45),
+        0 7px 14px rgba(180, 83, 9, 0.1);
+    }
+
+    #play-pause {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, #ffd166 0%, #f59e0b 100%);
+      font-size: 1.2rem;
+    }
+
+    #track-name {
+      display: block;
+      min-width: 92px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      color: #3b2507;
+      font-size: 0.82rem;
+      font-weight: 900;
+      text-align: center;
+      white-space: nowrap;
+      background: rgba(255, 247, 230, 0.76);
+      box-shadow: 0 8px 18px rgba(92, 64, 28, 0.1);
+      transform-origin: center;
+    }
+
+    #music-player.is-playing #track-name {
+      animation: track-bounce 0.72s ease-in-out infinite;
+    }
+
+    @keyframes track-bounce {
+      0%, 100% {
+        transform: translateY(0) rotate(-1deg);
+      }
+
+      50% {
+        transform: translateY(-4px) rotate(1deg);
+      }
+    }
+
+    @media (max-width: 480px) {
+      #music-player {
+        bottom: 14px;
+        gap: 7px;
+      }
+
+      #player-controls {
+        gap: 9px;
+        padding: 8px 10px;
+      }
+
+      .player-btn {
+        width: 38px;
+        height: 38px;
+      }
+
+      #play-pause {
+        width: 48px;
+        height: 48px;
+      }
+
+      #track-name {
+        min-width: 74px;
+        font-size: 0.75rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loader">
+    <div id="loader-content">
+      <h1 id="loader-title">Secret Scene</h1>
+      <div id="loader-status">Loading scene files...</div>
+      <div id="loader-track">
+        <div id="loader-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="music-player">
+    <span id="track-name">music 1</span>
+    <div id="player-controls">
+      <button class="player-btn" type="button" onclick="previousTrack()" aria-label="Previous track">&lt;</button>
+      <button class="player-btn" id="play-pause" type="button" onclick="togglePlayback()" aria-label="Play or pause">▶</button>
+      <button class="player-btn" type="button" onclick="nextTrack()" aria-label="Next track">&gt;</button>
+    </div>
+  </div>
+
+  <audio id="music-audio" preload="auto"></audio>
+
+  <a-scene embedded vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false" background="color: #f7d9a6" shadow="type: pcfsoft">
+    <a-assets>
+      <a-asset-item id="diorama-model" src="../../models/diorama-extrascene.glb"></a-asset-item>
+      <a-asset-item id="turtle-model" src="../../models/turtle.glb"></a-asset-item>
+      <a-asset-item id="rabbit-model" src="../../models/rabbit.glb"></a-asset-item>
+    </a-assets>
+
+    <a-sky color="#f7d9a6"></a-sky>
+
+    <a-entity id="secret-scene" position="0 0 0" rotation="0 0 0">
+      <a-entity id="diorama-base" gltf-model="#diorama-model" visible="false" scale="1.001 1.001 1.001" position="0 0 0"
+        shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="pagong" gltf-model="#turtle-model" visible="false" position="-2 2.2 9" scale="0.2 0.2 0.2" rotation="0 0 0"
+        shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="kuneho" gltf-model="#rabbit-model" visible="false" position="3.8 3 9.7" scale="0.004 0.004 0.004" rotation="0 180 0"
+        shadow="cast: true; receive: true"></a-entity>
+    </a-entity>
+
+    <a-light id="ambient-light" type="ambient" color="#fff6e6" intensity="0.64"></a-light>
+    <a-light id="sun-light" type="directional" color="#ffd08a" intensity="1.25" position="-6 5 5" shadow="cast: true"></a-light>
+    <a-light id="warm-light" type="point" color="#fff0c2" intensity="0.65" distance="28" position="-5 6 4"></a-light>
+    <a-light id="cool-light" type="point" color="#c7ddff" intensity="0.25" distance="22" position="6 5 -5"></a-light>
+
+    <a-entity camera position="0 5 15"
+      orbit-controls="target: 0 1 0; minDistance: 1; maxDistance: 80; initialPosition: 0 5 15; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const BASE_POSES = {
+      pagong: { x: -2, y: 2.2, z: 9, scale: 0.2, ry: 0 },
+      kuneho: { x: 3.8, y: 3, z: 9.7, scale: 0.004, ry: 180 }
+    };
+    const TRACKS = [
+      { name: 'music 1', src: '../../assets/audio/extra/es-music1.mp3', animation: 'animation-1' },
+      { name: 'music 2', src: '../../assets/audio/extra/es-music2.mp3', animation: 'animation-2' },
+      { name: 'music 3', src: '../../assets/audio/extra/es-music3.mp3', animation: 'animation-3' }
+    ];
+    const TRACK_MOODS = [
+      {
+        a: '#f9c675',
+        b: '#f2a99a'
+      },
+      {
+        a: '#f7cfe5',
+        b: '#cdd8f4'
+      },
+      {
+        a: '#b8efd9',
+        b: '#b8d7f4'
+      }
+    ];
+    const PRELOAD_ASSETS = [
+      '../../models/diorama-extrascene.glb',
+      '../../models/turtle.glb',
+      '../../models/rabbit.glb',
+      ...TRACKS.map(track => track.src)
+    ];
+
+    let animationFrameId = null;
+    let animationStartedAt = 0;
+    let animationRunning = false;
+    let currentTrackIndex = 0;
+    let isPlaying = false;
+    let moodFrameId = null;
+    let moodStartedAt = 0;
+
+    const DEFAULT_SCENE_COLOR = '#f7d9a6';
+
+    function hexToRgb(hex) {
+      const value = hex.replace('#', '');
+      return {
+        r: parseInt(value.slice(0, 2), 16),
+        g: parseInt(value.slice(2, 4), 16),
+        b: parseInt(value.slice(4, 6), 16)
+      };
+    }
+
+    function rgbToHex({ r, g, b }) {
+      const toHex = value => Math.round(value).toString(16).padStart(2, '0');
+      return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+    }
+
+    function mixHex(a, b, amount) {
+      const colorA = hexToRgb(a);
+      const colorB = hexToRgb(b);
+      return rgbToHex({
+        r: colorA.r + (colorB.r - colorA.r) * amount,
+        g: colorA.g + (colorB.g - colorA.g) * amount,
+        b: colorA.b + (colorB.b - colorA.b) * amount
+      });
+    }
+
+    function setSceneColor(color) {
+      document.body.style.backgroundColor = color;
+      document.querySelector('a-scene').setAttribute('background', `color: ${color}`);
+      document.querySelector('a-sky').setAttribute('color', color);
+    }
+
+    function applyMood(progress = 0) {
+      const mood = TRACK_MOODS[currentTrackIndex];
+      const trackColor = mixHex(mood.a, mood.b, progress);
+      const softenedColor = mixHex(DEFAULT_SCENE_COLOR, trackColor, 0.46);
+      setSceneColor(softenedColor);
+    }
+
+    function getMoodPulse(elapsed) {
+      if (currentTrackIndex === 0) {
+        const beat = Math.abs(Math.sin(elapsed * Math.PI * 2.45));
+        const offbeat = Math.abs(Math.sin((elapsed * Math.PI * 4.9) + 0.65)) * 0.26;
+        return Math.min(1, Math.pow(beat, 3.2) + offbeat);
+      }
+
+      return (Math.sin(elapsed * Math.PI * 0.45) + 1) / 2;
+    }
+
+    function moodTick(timestamp) {
+      if (!isPlaying) return;
+      if (!moodStartedAt) moodStartedAt = timestamp;
+
+      const elapsed = (timestamp - moodStartedAt) / 1000;
+      const pulse = getMoodPulse(elapsed);
+      applyMood(pulse);
+      moodFrameId = requestAnimationFrame(moodTick);
+    }
+
+    function startMoodPulse() {
+      if (moodFrameId) cancelAnimationFrame(moodFrameId);
+      moodStartedAt = 0;
+      moodFrameId = requestAnimationFrame(moodTick);
+    }
+
+    function stopMoodPulse() {
+      if (moodFrameId) {
+        cancelAnimationFrame(moodFrameId);
+        moodFrameId = null;
+      }
+      moodStartedAt = 0;
+      setSceneColor(DEFAULT_SCENE_COLOR);
+    }
+
+    function applyPose(key, pose) {
+      const entity = document.getElementById(key);
+      entity.setAttribute('position', `${pose.x.toFixed(3)} ${pose.y.toFixed(3)} ${pose.z.toFixed(3)}`);
+      entity.setAttribute('rotation', `${(pose.rx || 0).toFixed(2)} ${pose.ry.toFixed(2)} ${(pose.rz || 0).toFixed(2)}`);
+    }
+
+    function resetActors() {
+      Object.entries(BASE_POSES).forEach(([key, pose]) => {
+        const entity = document.getElementById(key);
+        entity.setAttribute('position', `${pose.x} ${pose.y} ${pose.z}`);
+        entity.setAttribute('rotation', `0 ${pose.ry} 0`);
+        entity.setAttribute('scale', `${pose.scale} ${pose.scale} ${pose.scale}`);
+      });
+    }
+
+    function currentAnimation() {
+      return TRACKS[currentTrackIndex].animation;
+    }
+
+    function animationTick(timestamp) {
+      if (!animationRunning) return;
+      if (!animationStartedAt) animationStartedAt = timestamp;
+
+      const elapsed = (timestamp - animationStartedAt) / 1000;
+      const selected = currentAnimation();
+      const pagongBase = BASE_POSES.pagong;
+      const kunehoBase = BASE_POSES.kuneho;
+
+      if (selected === 'animation-1') {
+        const pagongJump = Math.abs(Math.sin(elapsed * Math.PI * 2.15)) * 0.55;
+        const kunehoJump = Math.abs(Math.sin((elapsed * Math.PI * 2.45) + 1.25)) * 0.72;
+        applyPose('pagong', { ...pagongBase, y: pagongBase.y + pagongJump });
+        applyPose('kuneho', { ...kunehoBase, y: kunehoBase.y + kunehoJump });
+      }
+
+      if (selected === 'animation-2') {
+        const pagongSway = Math.sin(elapsed * Math.PI * 1.45) * 9;
+        const kunehoSway = Math.sin((elapsed * Math.PI * 1.65) + 0.8) * 12;
+        applyPose('pagong', { ...pagongBase, rz: pagongSway });
+        applyPose('kuneho', { ...kunehoBase, rz: kunehoSway });
+      }
+
+      if (selected === 'animation-3') {
+        const pagongJump = Math.abs(Math.sin(elapsed * Math.PI * 2.05)) * 0.48;
+        const kunehoJump = Math.abs(Math.sin((elapsed * Math.PI * 2.35) + 1.35)) * 0.65;
+        const pagongSpin = Math.sin(elapsed * Math.PI * 1.15) * 28;
+        const kunehoSpin = Math.sin((elapsed * Math.PI * 1.35) + 0.75) * 38;
+        applyPose('pagong', { ...pagongBase, y: pagongBase.y + pagongJump, ry: pagongBase.ry + pagongSpin });
+        applyPose('kuneho', { ...kunehoBase, y: kunehoBase.y + kunehoJump, ry: kunehoBase.ry + kunehoSpin });
+      }
+
+      animationFrameId = requestAnimationFrame(animationTick);
+    }
+
+    function startAnimation() {
+      if (animationRunning) return;
+      animationRunning = true;
+      animationStartedAt = 0;
+      animationFrameId = requestAnimationFrame(animationTick);
+    }
+
+    function stopAnimation() {
+      animationRunning = false;
+      animationStartedAt = 0;
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      resetActors();
+    }
+
+    function loadTrack(index) {
+      currentTrackIndex = (index + TRACKS.length) % TRACKS.length;
+      const track = TRACKS[currentTrackIndex];
+      const audio = document.getElementById('music-audio');
+      audio.src = track.src;
+      audio.currentTime = 0;
+      document.getElementById('track-name').textContent = track.name;
+      stopAnimation();
+      setPlayButton(true);
+      stopMoodPulse();
+      if (isPlaying) {
+        playCurrentTrack();
+      }
+    }
+
+    function setPlayButton(paused) {
+      document.getElementById('play-pause').innerHTML = paused ? '&#9658;' : '&#10073;&#10073;';
+      document.getElementById('music-player').classList.toggle('is-playing', !paused);
+    }
+
+    function playCurrentTrack() {
+      const audio = document.getElementById('music-audio');
+      isPlaying = true;
+      audio.play().then(() => {
+        document.getElementById('play-pause').textContent = '❚❚';
+        setPlayButton(false);
+        startMoodPulse();
+        startAnimation();
+      }).catch(() => {
+        isPlaying = false;
+        document.getElementById('play-pause').textContent = '▶';
+      });
+    }
+
+    function pauseCurrentTrack() {
+      const audio = document.getElementById('music-audio');
+      isPlaying = false;
+      audio.pause();
+      document.getElementById('play-pause').textContent = '▶';
+      stopAnimation();
+      setPlayButton(true);
+      stopMoodPulse();
+    }
+
+    function togglePlayback() {
+      if (isPlaying) {
+        pauseCurrentTrack();
+      } else {
+        playCurrentTrack();
+      }
+    }
+
+    function nextTrack() {
+      loadTrack(currentTrackIndex + 1);
+    }
+
+    function previousTrack() {
+      loadTrack(currentTrackIndex - 1);
+    }
+
+    function setLoaderStatus(message, progress) {
+      document.getElementById('loader-status').textContent = message;
+      document.getElementById('loader-fill').style.width = `${progress}%`;
+    }
+
+    function waitForModel(entityId) {
+      const entity = document.getElementById(entityId);
+      if (entity.getObject3D('mesh')) return Promise.resolve();
+
+      return new Promise(resolve => {
+        entity.addEventListener('model-loaded', resolve, { once: true });
+      });
+    }
+
+    function revealSceneModels() {
+      ['diorama-base', 'pagong', 'kuneho'].forEach(entityId => {
+        document.getElementById(entityId).setAttribute('visible', 'true');
+      });
+    }
+
+    async function preloadAssets() {
+      let loaded = 0;
+      setLoaderStatus('Loading scene files...', 12);
+
+      await Promise.all(PRELOAD_ASSETS.map(async asset => {
+        try {
+          const response = await fetch(asset, { cache: 'force-cache' });
+          if (!response.ok) throw new Error(`Failed to preload ${asset}`);
+          await response.blob();
+        } catch (error) {
+          console.warn(error);
+        } finally {
+          loaded += 1;
+          const progress = 12 + Math.round((loaded / PRELOAD_ASSETS.length) * 58);
+          setLoaderStatus('Loading scene files...', progress);
+        }
+      }));
+
+      setLoaderStatus('Preparing 3D scene...', 78);
+      await Promise.all([
+        waitForModel('diorama-base'),
+        waitForModel('pagong'),
+        waitForModel('kuneho')
+      ]);
+
+      setLoaderStatus('Scene ready.', 100);
+      revealSceneModels();
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      document.body.classList.add('is-ready');
+    }
+
+    document.getElementById('music-audio').addEventListener('ended', nextTrack);
+
+    resetActors();
+    loadTrack(0);
+    setSceneColor(DEFAULT_SCENE_COLOR);
+    preloadAssets();
+  </script>
+</body>
+
+</html>

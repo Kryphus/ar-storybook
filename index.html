@@ -82,14 +82,21 @@
       <div class="start-btn-container fade-in fade-in-delay-2" id="start-btn" onclick="startAR()" role="button"
         tabindex="0" aria-label="Start AR Camera">
         <img data-src="assets/images/woodenbanner.png" alt="">
-        <span class="start-btn-text">▶ Start</span>
+        <span class="start-btn-text">Start</span>
+      </div>
+
+      <!-- Mini Game Button -->
+      <div class="start-btn-container mini-game-btn fade-in fade-in-delay-3" id="mini-game-btn"
+        onclick="startMiniGame()" role="button" tabindex="0" aria-label="Open Mini Game">
+        <img data-src="assets/images/woodenbanner.png" alt="">
+        <span class="start-btn-text">Mini Game</span>
       </div>
 
     </div>
 
     <!-- Footer -->
     <div class="footer-credits fade-in fade-in-delay-3">
-      Kryp — AR Storybook © 2026
+      AR Storybook � 2026
     </div>
 
   </div>
@@ -295,11 +302,26 @@
       }, 400);
     }
 
+    function startMiniGame() {
+      const btn = document.getElementById('mini-game-btn');
+      btn.classList.add('clicked');
+      setTimeout(() => {
+        window.location.href = 'game/';
+      }, 400);
+    }
+
     // Allow keyboard activation of the start button
     document.getElementById('start-btn').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         startAR();
+      }
+    });
+
+    document.getElementById('mini-game-btn').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        startMiniGame();
       }
     });
 
@@ -310,3 +332,5 @@
 </body>
 
 </html>
+
+

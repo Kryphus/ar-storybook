@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Treasure Hunt - Si Pagong at si Kuneho</title>
+  <meta name="description" content="Treasure hunt mini game for Si Pagong at si Kuneho AR Storybook.">
+
+  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@2.0.12/dist/lottie-player.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      background: #f7d9a6;
+    }
+
+    #game-nav {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 730;
+    }
+
+    #game-title {
+      display: none;
+    }
+
+    .home-btn {
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      border: 1px solid rgba(47, 38, 29, 0.025);
+      border-radius: 999px;
+      border-color: rgba(47, 38, 29, 0.025);
+      color: rgba(59, 37, 7, 0.72);
+      background: rgba(255, 255, 255, 0.055);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 5px 14px rgba(92, 64, 28, 0.025);
+      font-size: 1.45rem;
+      font-weight: 900;
+      line-height: 1;
+      text-decoration: none;
+      backdrop-filter: blur(10px);
+      transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease;
+    }
+
+    .home-btn:hover {
+      color: rgba(59, 37, 7, 0.86);
+      background: rgba(255, 255, 255, 0.16);
+      transform: translateY(-1px) scale(1.04);
+    }
+
+    .home-btn:active {
+      transform: translateY(1px) scale(0.94);
+    }
+
+    .nav-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      padding: 7px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      color: rgba(255, 255, 255, 0.88);
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    #game-counter {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      z-index: 190;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: max-content;
+      max-width: calc(100vw - 24px);
+      padding: 0;
+      border-radius: 999px;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      transform: translateX(-50%);
+    }
+
+    .progress-chest {
+      width: 64px;
+      height: 64px;
+      object-fit: contain;
+      opacity: 0.34;
+      filter: blur(1.1px) grayscale(0.25) saturate(0.72);
+      transform: scale(0.88);
+      transition: opacity 0.28s ease, filter 0.28s ease, transform 0.28s ease;
+    }
+
+    .progress-chest.is-found {
+      opacity: 1;
+      filter: blur(0) grayscale(0) saturate(1.15);
+      transform: scale(1);
+    }
+
+    .progress-chest.just-found {
+      animation: chest-progress-pop 0.54s ease both;
+    }
+
+    #found-status {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @keyframes chest-progress-pop {
+      0% {
+        transform: scale(0.78) rotate(-8deg);
+      }
+
+      48% {
+        transform: scale(1.24) rotate(6deg);
+      }
+
+      72% {
+        transform: scale(0.96) rotate(-2deg);
+      }
+
+      100% {
+        transform: scale(1) rotate(0);
+      }
+    }
+
+    #orbit-hint {
+      position: fixed;
+      left: 50%;
+      bottom: 88px;
+      z-index: 160;
+      transform: translateX(-50%);
+      color: rgba(31, 41, 55, 0.62);
+      background: rgba(255, 255, 255, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.55);
+      border-radius: 999px;
+      padding: 8px 13px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      pointer-events: none;
+      white-space: nowrap;
+      backdrop-filter: blur(10px);
+    }
+
+    body.game-active #orbit-hint,
+    body.game-complete #orbit-hint {
+      opacity: 0;
+    }
+
+    #win-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 500;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(9px);
+    }
+
+    body.game-complete #win-overlay {
+      display: grid;
+    }
+
+    #win-dialog {
+      width: min(380px, 100%);
+      text-align: center;
+      color: #2f261d;
+    }
+
+    #win-dialog h2 {
+      margin: 0 0 10px;
+      font-size: clamp(1.85rem, 8vw, 2.6rem);
+      font-weight: 900;
+      line-height: 1.06;
+    }
+
+    #win-dialog p {
+      margin: 0 auto 22px;
+      max-width: 310px;
+      color: rgba(47, 38, 29, 0.72);
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    #win-cat {
+      width: 128px;
+      height: 128px;
+      object-fit: contain;
+      margin: 0 auto 10px;
+      display: block;
+      animation: win-cat-pop 0.68s ease both;
+    }
+
+    @keyframes win-cat-pop {
+      0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.82) rotate(-4deg);
+      }
+
+      58% {
+        opacity: 1;
+        transform: translateY(-4px) scale(1.08) rotate(3deg);
+      }
+
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0);
+      }
+    }
+
+    #leave-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 760;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      background: rgba(255, 255, 255, 0.68);
+      backdrop-filter: blur(9px);
+    }
+
+    body.confirm-leave #leave-overlay {
+      display: grid;
+    }
+
+    #leave-dialog {
+      width: min(340px, 100%);
+      text-align: center;
+      color: #2f261d;
+    }
+
+    #leave-dialog h2 {
+      margin: 0 0 8px;
+      font-size: 1.5rem;
+      font-weight: 900;
+    }
+
+    #leave-dialog p {
+      margin: 0 auto 20px;
+      max-width: 280px;
+      color: rgba(47, 38, 29, 0.72);
+      font-size: 0.98rem;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+
+    #leave-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #win-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .game-button {
+      border: 1px solid rgba(133, 77, 14, 0.28);
+      border-radius: 999px;
+      min-width: 168px;
+      padding: 11px 16px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .game-button.secondary {
+      border: 1px solid rgba(75, 85, 99, 0.22);
+      color: #374151;
+      background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.56),
+        0 5px 0 rgba(107, 114, 128, 0.5),
+        0 14px 26px rgba(75, 85, 99, 0.12);
+    }
+
+    .game-button.primary {
+      color: white;
+      background: #2563eb;
+    }
+
+    .game-button.gold {
+      border: 1px solid rgba(133, 77, 14, 0.28);
+      color: #3b2507;
+      background: linear-gradient(135deg, #ffd166 0%, #f59e0b 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 5px 0 rgba(180, 83, 9, 0.72),
+        0 14px 26px rgba(217, 119, 6, 0.24);
+    }
+
+    .game-button.gold:active {
+      transform: translateY(2px) scale(0.96);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 2px 0 rgba(180, 83, 9, 0.72),
+        0 7px 16px rgba(217, 119, 6, 0.2);
+    }
+
+    .game-button.secondary:active {
+      transform: translateY(2px) scale(0.96);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.36),
+        0 2px 0 rgba(107, 114, 128, 0.5),
+        0 7px 16px rgba(75, 85, 99, 0.1);
+    }
+
+    .confetti-piece {
+      position: fixed;
+      top: -16px;
+      z-index: 520;
+      width: 9px;
+      height: 14px;
+      border-radius: 2px;
+      pointer-events: none;
+      animation: confetti-fall 1.9s ease-out forwards;
+    }
+
+    .floating-score {
+      position: fixed;
+      left: 50%;
+      top: 46%;
+      z-index: 360;
+      color: #b45309;
+      font-family: "Comic Sans MS", "Trebuchet MS", "Segoe UI", sans-serif;
+      font-size: 2.15rem;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.78),
+        0 3px 8px rgba(146, 64, 14, 0.2);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: floating-score-pop 0.82s ease-out forwards;
+    }
+
+    @keyframes confetti-fall {
+      0% {
+        transform: translate3d(0, 0, 0) rotate(0deg);
+        opacity: 1;
+      }
+
+      100% {
+        transform: translate3d(var(--fall-x), 105vh, 0) rotate(720deg);
+        opacity: 0;
+      }
+    }
+
+    #game-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 700;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      color: #2f261d;
+      background: rgba(255, 255, 255, 0.78);
+      text-align: center;
+      backdrop-filter: blur(8px);
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    #music-toggle {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 730;
+      width: 44px;
+      height: 44px;
+      border: 1px solid rgba(47, 38, 29, 0.025);
+      border-radius: 999px;
+      color: rgba(59, 37, 7, 0.68);
+      background: rgba(255, 255, 255, 0.055);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 5px 14px rgba(92, 64, 28, 0.025);
+      font-size: 1.25rem;
+      font-weight: 900;
+      line-height: 1;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    #music-toggle:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: rgba(59, 37, 7, 0.86);
+      transform: translateY(-1px) scale(1.04);
+    }
+
+    #music-toggle:active {
+      transform: translateY(1px) scale(0.94);
+    }
+
+    #music-toggle.is-muted {
+      opacity: 0.6;
+    }
+
+    #music-toggle.is-muted::after {
+      content: "";
+      position: absolute;
+      left: 11px;
+      right: 11px;
+      top: 50%;
+      height: 2px;
+      border-radius: 999px;
+      background: rgba(59, 37, 7, 0.72);
+      transform: rotate(-35deg);
+    }
+
+    body.loader-hidden #game-loader {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    body.loader-hidden #music-toggle {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    #loader-content {
+      width: min(360px, 100%);
+    }
+
+    #loader-lottie {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 4px;
+      display: none;
+    }
+
+    body.loader-intro #loader-lottie {
+      display: block;
+    }
+
+    #loader-title {
+      margin: 0;
+      font-size: clamp(1.75rem, 7vw, 2.55rem);
+      line-height: 1.05;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    #loader-text {
+      margin: 10px auto 0;
+      max-width: 320px;
+      color: rgba(47, 38, 29, 0.72);
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    #loader-bar {
+      width: min(260px, 74vw);
+      height: 8px;
+      margin: 18px auto 0;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(47, 38, 29, 0.12);
+    }
+
+    #loader-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: #2f261d;
+      transition: width 0.22s ease;
+    }
+
+    body.loader-intro #loader-bar {
+      display: none;
+    }
+
+    #intro-start {
+      display: none;
+      margin-top: 22px;
+      border: none;
+      border-radius: 999px;
+      padding: 13px 34px;
+      color: #3b2507;
+      background: linear-gradient(135deg, #ffd166 0%, #f59e0b 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 7px 0 rgba(180, 83, 9, 0.72),
+        0 18px 34px rgba(217, 119, 6, 0.32);
+      font-size: 1rem;
+      font-weight: 900;
+      cursor: pointer;
+      transform: translateY(0) scale(1);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    body.loader-intro #intro-start {
+      display: inline-flex;
+    }
+
+    #intro-start:hover {
+      background: linear-gradient(135deg, #ffe08a 0%, #f59e0b 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.48),
+        0 8px 0 rgba(180, 83, 9, 0.76),
+        0 22px 42px rgba(217, 119, 6, 0.38);
+      transform: translateY(-1px) scale(1.03);
+    }
+
+    #intro-start:active,
+    #intro-start.start-clicked {
+      transform: translateY(2px) scale(0.94);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 3px 0 rgba(180, 83, 9, 0.72),
+        0 9px 18px rgba(217, 119, 6, 0.24);
+    }
+
+    #intro-start.start-clicked {
+      animation: start-button-pop 0.34s ease forwards;
+    }
+
+    @keyframes start-button-pop {
+      0% {
+        transform: translateY(2px) scale(0.94);
+      }
+
+      60% {
+        transform: translateY(-2px) scale(1.06);
+      }
+
+      100% {
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @media (max-width: 520px) {
+      #game-nav {
+        top: 14px;
+        left: 14px;
+      }
+
+      #music-toggle {
+        top: 14px;
+        right: 14px;
+      }
+
+      #game-counter {
+        bottom: 18px;
+      }
+
+      .progress-chest {
+        width: 58px;
+        height: 58px;
+      }
+    }
+
+    @keyframes floating-score-pop {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -35%) scale(0.72) rotate(-8deg);
+      }
+
+      18% {
+        opacity: 1;
+        transform: translate(-50%, -55%) scale(1.18) rotate(5deg);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -125%) scale(1) rotate(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <button id="music-toggle" type="button" onclick="toggleGameMusic()" aria-label="Toggle music">♪</button>
+
+  <div id="game-loader">
+    <div id="loader-content">
+      <lottie-player id="loader-lottie" src="../assets/images/cathead-loading.json" background="transparent" speed="1"
+        loop autoplay></lottie-player>
+      <h1 id="loader-title">Loading game</h1>
+      <p id="loader-text"></p>
+      <div id="loader-bar">
+        <div id="loader-fill"></div>
+      </div>
+      <button id="intro-start" type="button" onclick="startGame()">Start Game</button>
+    </div>
+  </div>
+
+  <nav id="game-nav">
+    <a href="../index.html" class="home-btn" aria-label="Back to home" onclick="confirmLeave(event)">&lsaquo;</a>
+  </nav>
+
+  <div id="game-counter" aria-live="polite">
+    <span id="found-status">Found chests: 0 / 3</span>
+    <img class="progress-chest" src="../assets/images/game/gold-chest.png" alt="">
+    <img class="progress-chest" src="../assets/images/game/gold-chest.png" alt="">
+    <img class="progress-chest" src="../assets/images/game/gold-chest.png" alt="">
+  </div>
+  <p id="orbit-hint">Drag to orbit | Pinch or scroll to zoom</p>
+  <audio id="game-music" src="../assets/audio/game-bgmusic.mp3" preload="auto" loop></audio>
+  <audio id="win-sound" src="../assets/audio/yay-game.mp3" preload="auto"></audio>
+
+  <div id="win-overlay">
+    <div id="win-dialog">
+      <img id="win-cat" src="../assets/images/game/cathead-happy.png" alt="Muning">
+      <h2>You found all chests!</h2>
+      <p>Muning found every hidden treasure. You unlocked a secret scene!</p>
+      <div id="win-actions">
+        <button class="game-button gold" type="button" onclick="goToPages()">Back to Pages</button>
+        <button class="game-button secondary" type="button" onclick="restartGame()">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="leave-overlay">
+    <div id="leave-dialog">
+      <h2>Are you sure?</h2>
+      <p>Your game progress will not be saved.</p>
+      <div id="leave-actions">
+        <button class="game-button secondary" type="button" onclick="closeLeavePrompt()">No</button>
+        <button class="game-button gold" type="button" onclick="goToLanding()">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <a-scene embedded vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+    loading-screen="enabled: false" background="color: #f7d9a6" shadow="type: pcfsoft">
+
+    <a-assets>
+      <a-asset-item id="diorama-model" src="../models/castle.glb"></a-asset-item>
+      <a-asset-item id="gold-chest-model" src="../models/chests/gold_chest.glb"></a-asset-item>
+    </a-assets>
+
+    <a-sky color="#f7d9a6"></a-sky>
+
+    <a-entity id="game-scene" position="0 0 0" rotation="0 0 0">
+      <a-entity id="diorama-base" gltf-model="#diorama-model" scale="2.001 2.001 2.001" position="0 0 0"
+        shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="chest-1" class="clickable-chest" data-chest-key="chest-1" gltf-model="#gold-chest-model"
+        position="-7 5.5 4.2" scale="0.5 0.5 0.5" rotation="0 180 0" shadow="cast: true; receive: true">
+      </a-entity>
+
+      <a-entity id="chest-2" class="clickable-chest" data-chest-key="chest-2" gltf-model="#gold-chest-model"
+        position="7.5 5.5 -5" scale="0.5 0.5 0.5" rotation="0 180 0" shadow="cast: true; receive: true">
+      </a-entity>
+
+      <a-entity id="chest-3" class="clickable-chest" data-chest-key="chest-3" gltf-model="#gold-chest-model"
+        position="16.5 6 13.2" scale="0.2 0.2 0.2" rotation="0 5 0" shadow="cast: true; receive: true">
+      </a-entity>
+    </a-entity>
+
+    <a-light type="ambient" color="#fff6e6" intensity="0.58"></a-light>
+    <a-light type="directional" color="#ffd08a" intensity="1.35" position="-6 4 5" shadow="cast: true"></a-light>
+    <a-light type="point" color="#fff0c2" intensity="0.85" distance="22" position="-5 5 4"></a-light>
+    <a-light type="point" color="#c7ddff" intensity="0.28" distance="18" position="6 4 -5"></a-light>
+
+    <a-entity id="game-camera" camera position="0 4 10" cursor="rayOrigin: mouse" raycaster="objects: .clickable-chest"
+      orbit-controls="target: 0 1 0; minDistance: 1; maxDistance: 48; initialPosition: 0 4 10; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const CHESTS = [
+      { key: 'chest-1', scale: '0.5 0.5 0.5' },
+      { key: 'chest-2', scale: '0.5 0.5 0.5' },
+      { key: 'chest-3', scale: '0.2 0.2 0.2' }
+    ];
+    const GAME_ASSETS = [
+      '../models/castle.glb',
+      '../models/chests/gold_chest.glb',
+      '../assets/audio/game-bgmusic.mp3',
+      '../assets/audio/yay-game.mp3',
+      '../assets/images/game/gold-chest.png',
+      '../assets/images/game/cathead-happy.png',
+      '../assets/images/cathead-loading.json'
+    ];
+
+    const foundChests = new Set();
+    const EXTRA_SCENE_UNLOCK_KEY = 'arStorybookExtraSceneUnlocked';
+    let gameStarted = false;
+    let gameAudioContext = null;
+    let gameMusicEnabled = false;
+    let winTimeoutId = null;
+
+    async function preloadGameAssets() {
+      const loaderFill = document.getElementById('loader-fill');
+      const loaderTitle = document.getElementById('loader-title');
+      let completed = 0;
+
+      await Promise.all(GAME_ASSETS.map(async asset => {
+        try {
+          const response = await fetch(asset, { cache: 'force-cache' });
+          if (!response.ok) throw new Error(`Failed to load ${asset}`);
+          await response.blob();
+        } catch (error) {
+          console.warn(error);
+        } finally {
+          completed += 1;
+          loaderFill.style.width = `${Math.round((completed / GAME_ASSETS.length) * 100)}%`;
+        }
+      }));
+
+      loaderTitle.textContent = 'Help Muning find all chests!';
+      document.getElementById('loader-text').textContent =
+        'Look around the castle, tap each hidden chest 🪙, and unlock the secret scene.';
+      document.body.classList.add('loader-intro');
+    }
+
+    function getGameAudioContext() {
+      if (!gameAudioContext) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        gameAudioContext = new AudioContextClass();
+      }
+      if (gameAudioContext.state === 'suspended') {
+        gameAudioContext.resume();
+      }
+      return gameAudioContext;
+    }
+
+    function playTone({ frequency, startTime, duration, type = 'sine', gain = 0.08 }) {
+      const audioContext = getGameAudioContext();
+      if (!audioContext) return;
+
+      const oscillator = audioContext.createOscillator();
+      const volume = audioContext.createGain();
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, startTime);
+      volume.gain.setValueAtTime(0.0001, startTime);
+      volume.gain.exponentialRampToValueAtTime(gain, startTime + 0.015);
+      volume.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+      oscillator.connect(volume);
+      volume.connect(audioContext.destination);
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration + 0.02);
+    }
+
+    function playChestSound() {
+      const audioContext = getGameAudioContext();
+      if (!audioContext) return;
+      const now = audioContext.currentTime;
+      playTone({ frequency: 784, startTime: now, duration: 0.11, type: 'triangle', gain: 0.07 });
+      playTone({ frequency: 1175, startTime: now + 0.08, duration: 0.14, type: 'triangle', gain: 0.055 });
+    }
+
+    function playWinSound() {
+      const winSound = document.getElementById('win-sound');
+      winSound.currentTime = 0;
+      winSound.play().catch(() => {
+        const audioContext = getGameAudioContext();
+        if (!audioContext) return;
+        const now = audioContext.currentTime;
+        [523, 659, 784, 1047].forEach((frequency, index) => {
+          playTone({
+            frequency,
+            startTime: now + index * 0.085,
+            duration: 0.18,
+            type: 'triangle',
+            gain: 0.075
+          });
+        });
+      });
+    }
+
+    function updateMusicButton() {
+      const button = document.getElementById('music-toggle');
+      button.classList.toggle('is-muted', !gameMusicEnabled);
+      button.setAttribute('aria-pressed', String(gameMusicEnabled));
+    }
+
+    function playGameMusic() {
+      if (!gameMusicEnabled) return;
+      const music = document.getElementById('game-music');
+      music.volume = 0.42;
+      music.play().catch(() => {
+        gameMusicEnabled = false;
+        updateMusicButton();
+      });
+    }
+
+    function toggleGameMusic() {
+      const music = document.getElementById('game-music');
+      gameMusicEnabled = !gameMusicEnabled;
+      if (gameMusicEnabled) {
+        playGameMusic();
+      } else {
+        music.pause();
+      }
+      updateMusicButton();
+    }
+
+    function updateFoundCounter() {
+      const foundCount = foundChests.size;
+      document.getElementById('found-status').textContent = `Found chests: ${foundCount} / ${CHESTS.length}`;
+      document.querySelectorAll('.progress-chest').forEach((icon, index) => {
+        icon.classList.toggle('is-found', index < foundCount);
+      });
+    }
+
+    function animateFoundProgressIcon() {
+      const icon = document.querySelectorAll('.progress-chest')[foundChests.size - 1];
+      if (!icon) return;
+      icon.classList.remove('just-found');
+      void icon.offsetWidth;
+      icon.classList.add('just-found');
+      setTimeout(() => icon.classList.remove('just-found'), 620);
+    }
+
+    function showFloatingScore() {
+      const score = document.createElement('div');
+      score.className = 'floating-score';
+      score.textContent = '+1';
+      document.body.appendChild(score);
+      setTimeout(() => score.remove(), 900);
+    }
+
+    function startGame() {
+      const introStart = document.getElementById('intro-start');
+      if (!document.body.classList.contains('loader-hidden') && !introStart.classList.contains('start-clicked')) {
+        introStart.classList.add('start-clicked');
+        setTimeout(() => {
+          introStart.classList.remove('start-clicked');
+          beginGame();
+        }, 260);
+        return;
+      }
+
+      beginGame();
+    }
+
+    function beginGame() {
+      getGameAudioContext();
+      playGameMusic();
+      if (winTimeoutId) {
+        clearTimeout(winTimeoutId);
+        winTimeoutId = null;
+      }
+      gameStarted = true;
+      foundChests.clear();
+      document.body.classList.add('loader-hidden');
+      document.body.classList.add('game-active');
+      document.body.classList.remove('game-complete');
+      updateFoundCounter();
+      resetChestHighlights();
+      animateIntroZoom();
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    function goToPages() {
+      window.location.href = '../pages.html';
+    }
+
+    function confirmLeave(event) {
+      event.preventDefault();
+      document.body.classList.add('confirm-leave');
+    }
+
+    function closeLeavePrompt() {
+      document.body.classList.remove('confirm-leave');
+    }
+
+    function goToLanding() {
+      window.location.href = '../index.html';
+    }
+
+    function handleChestClick(chestKey) {
+      if (!gameStarted || foundChests.has(chestKey)) return;
+
+      foundChests.add(chestKey);
+      updateFoundCounter();
+      animateFoundProgressIcon();
+      showFloatingScore();
+      markChestFound(chestKey);
+      playChestSound();
+
+      if (foundChests.size >= CHESTS.length) {
+        gameStarted = false;
+        if (winTimeoutId) clearTimeout(winTimeoutId);
+        winTimeoutId = setTimeout(completeGame, 760);
+      }
+    }
+
+    function completeGame() {
+      gameStarted = false;
+      localStorage.setItem(EXTRA_SCENE_UNLOCK_KEY, 'true');
+      document.body.classList.remove('game-active');
+      document.body.classList.add('game-complete');
+      playWinSound();
+      launchConfetti();
+    }
+
+    function easeOutCubic(t) {
+      return 1 - Math.pow(1 - t, 3);
+    }
+
+    function animateIntroZoom() {
+      const camera = document.getElementById('game-camera');
+      if (!camera) return;
+
+      const start = { x: 0, y: 3.2, z: 8 };
+      const end = { x: 0, y: 6.1, z: 21 };
+      const duration = 1600;
+      const startedAt = performance.now();
+      camera.object3D.position.set(start.x, start.y, start.z);
+
+      function tick(now) {
+        const progress = Math.min((now - startedAt) / duration, 1);
+        const eased = easeOutCubic(progress);
+        camera.object3D.position.set(
+          start.x + (end.x - start.x) * eased,
+          start.y + (end.y - start.y) * eased,
+          start.z + (end.z - start.z) * eased
+        );
+
+        const orbitControls = camera.components['orbit-controls'];
+        if (orbitControls?.controls) {
+          orbitControls.controls.object.position.copy(camera.object3D.position);
+          orbitControls.controls.update();
+        }
+
+        if (progress < 1) requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    function markChestFound(chestKey) {
+      const entity = document.getElementById(chestKey);
+      entity.setAttribute('animation__found',
+        'property: scale; dir: alternate; dur: 180; loop: 2; easing: easeOutQuad; to: 0.62 0.62 0.62');
+      entity.object3D.traverse(node => {
+        if (!node.material) return;
+        node.material = node.material.clone();
+        node.material.emissive?.setHex(0xffd166);
+        node.material.emissiveIntensity = 0.25;
+      });
+    }
+
+    function resetChestHighlights() {
+      CHESTS.forEach(chest => {
+        const entity = document.getElementById(chest.key);
+        entity.removeAttribute('animation__found');
+        entity.setAttribute('scale', chest.scale);
+        entity.object3D.traverse(node => {
+          if (!node.material) return;
+          node.material.emissive?.setHex(0x000000);
+          node.material.emissiveIntensity = 0;
+        });
+      });
+    }
+
+    function launchConfetti() {
+      const colors = ['#f97316', '#facc15', '#22c55e', '#38bdf8', '#a855f7', '#ef4444'];
+      for (let i = 0; i < 90; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.left = `${Math.random() * 100}%`;
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.animationDelay = `${Math.random() * 0.35}s`;
+        piece.style.setProperty('--fall-x', `${Math.random() * 240 - 120}px`);
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 2400);
+      }
+    }
+
+    document.querySelectorAll('.clickable-chest').forEach(entity => {
+      entity.addEventListener('click', event => {
+        event.stopPropagation();
+        handleChestClick(entity.dataset.chestKey);
+      });
+    });
+
+    updateMusicButton();
+    preloadGameAssets();
+  </script>
+</body>
+
+</html>
+

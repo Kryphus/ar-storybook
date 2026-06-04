@@ -241,6 +241,12 @@ body {
   transform: translateY(0) scale(0.97);
 }
 
+.extra-page-card {
+  grid-column: 1 / -1;
+  width: calc((100% - 12px) / 2);
+  justify-self: center;
+}
+
 /* Marker thumbnail */
 .page-thumb {
   width: 100%;
@@ -320,6 +326,12 @@ body {
     grid-template-columns: repeat(3, 1fr);
     max-width: 600px;
     margin: 0 auto;
+  }
+
+  .extra-page-card {
+    grid-column: auto;
+    width: auto;
+    justify-self: stretch;
   }
 }
 
