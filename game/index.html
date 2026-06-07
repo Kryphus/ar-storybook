@@ -110,15 +110,13 @@
       width: 64px;
       height: 64px;
       object-fit: contain;
-      opacity: 0.34;
-      filter: blur(1.1px) grayscale(0.25) saturate(0.72);
-      transform: scale(0.88);
-      transition: opacity 0.28s ease, filter 0.28s ease, transform 0.28s ease;
+      opacity: 0.28;
+      transform: scale(0.82);
+      transition: opacity 0.28s ease, transform 0.28s ease;
     }
 
     .progress-chest.is-found {
       opacity: 1;
-      filter: blur(0) grayscale(0) saturate(1.15);
       transform: scale(1);
     }
 
@@ -688,7 +686,7 @@
       </a-entity>
 
       <a-entity id="chest-3" class="clickable-chest" data-chest-key="chest-3" gltf-model="#gold-chest-model"
-        position="16.5 6 13.2" scale="0.2 0.2 0.2" rotation="0 5 0" shadow="cast: true; receive: true">
+        position="16.6 4.4 10.4" scale="0.5 0.5 0.5" rotation="0 5 0" shadow="cast: true; receive: true">
       </a-entity>
     </a-entity>
 
@@ -706,7 +704,7 @@
     const CHESTS = [
       { key: 'chest-1', scale: '0.5 0.5 0.5' },
       { key: 'chest-2', scale: '0.5 0.5 0.5' },
-      { key: 'chest-3', scale: '0.2 0.2 0.2' }
+      { key: 'chest-3', scale: '0.5 0.5 0.5' }
     ];
     const GAME_ASSETS = [
       '../models/castle.glb',

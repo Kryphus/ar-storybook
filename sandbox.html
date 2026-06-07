@@ -6,12 +6,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
-  <title>Secret Scene Sandbox</title>
+  <title>Treasure Hunt Sandbox</title>
 
   <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-orbit-controls@1.3.2/dist/aframe-orbit-controls.min.js"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     html,
     body {
       margin: 0;
@@ -19,39 +23,14 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      font-family: "Segoe UI", sans-serif;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
       background: #f7d9a6;
-    }
-
-    #info-bar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 16px;
-      color: white;
-      background: rgba(15, 23, 42, 0.82);
-      font-size: 0.85rem;
-      backdrop-filter: blur(12px);
-    }
-
-    #info-bar .title {
-      font-weight: 700;
-    }
-
-    #info-bar .hint {
-      opacity: 0.68;
-      font-size: 0.75rem;
     }
 
     #loader {
       position: fixed;
       inset: 0;
-      z-index: 800;
+      z-index: 900;
       display: grid;
       place-items: center;
       padding: 24px;
@@ -69,7 +48,7 @@
     }
 
     #loader-content {
-      width: min(300px, 100%);
+      width: min(320px, 100%);
     }
 
     #loader-title {
@@ -94,88 +73,183 @@
       transition: width 0.2s ease;
     }
 
-    #music-player {
+    #top-bar {
       position: fixed;
-      left: 50%;
-      bottom: 18px;
-      z-index: 220;
+      top: 12px;
+      left: 12px;
+      right: 12px;
+      z-index: 120;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.86);
-      box-shadow: 0 14px 36px rgba(92, 64, 28, 0.16);
-      transform: translateX(-50%);
-      backdrop-filter: blur(14px);
+      justify-content: space-between;
+      gap: 10px;
+      pointer-events: none;
     }
 
-    .player-btn {
+    #title-pill,
+    #hint-pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: rgba(59, 37, 7, 0.8);
+      background: rgba(255, 255, 255, 0.62);
+      box-shadow: 0 10px 28px rgba(92, 64, 28, 0.12);
+      font-size: 0.78rem;
+      font-weight: 900;
+      backdrop-filter: blur(10px);
+    }
+
+    #hint-pill {
+      color: rgba(59, 37, 7, 0.62);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+
+    #tweak-toggle {
+      position: fixed;
+      top: 58px;
+      right: 14px;
+      z-index: 210;
       width: 42px;
       height: 42px;
-      border: none;
+      border: 1px solid rgba(47, 38, 29, 0.08);
       border-radius: 999px;
       color: #3b2507;
-      background: #fff7e6;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.75),
-        0 5px 0 rgba(214, 137, 38, 0.45),
-        0 12px 20px rgba(180, 83, 9, 0.12);
-      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.74);
+      box-shadow: 0 10px 24px rgba(92, 64, 28, 0.13);
+      font-size: 1.1rem;
       font-weight: 900;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+      backdrop-filter: blur(10px);
     }
 
-    .player-btn:hover {
-      background: #ffedc2;
-      transform: translateY(-1px) scale(1.04);
+    #tweak-panel {
+      position: fixed;
+      top: 108px;
+      right: 14px;
+      bottom: 14px;
+      z-index: 200;
+      width: min(330px, calc(100vw - 28px));
+      overflow-y: auto;
+      padding: 14px;
+      border: 1px solid rgba(47, 38, 29, 0.1);
+      border-radius: 18px;
+      color: #2f261d;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 18px 44px rgba(92, 64, 28, 0.16);
+      backdrop-filter: blur(16px);
+      transition: transform 0.22s ease, opacity 0.22s ease, visibility 0.22s ease;
     }
 
-    .player-btn:active {
-      transform: translateY(2px) scale(0.94);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.55),
-        0 2px 0 rgba(214, 137, 38, 0.45),
-        0 7px 14px rgba(180, 83, 9, 0.1);
+    body.tweaks-closed #tweak-panel {
+      opacity: 0;
+      visibility: hidden;
+      transform: translateX(calc(100% + 22px));
+      pointer-events: none;
     }
 
-    #play-pause {
-      width: 52px;
-      height: 52px;
-      background: linear-gradient(135deg, #ffd166 0%, #f59e0b 100%);
-      font-size: 1.2rem;
-    }
-
-    #track-name {
-      min-width: 92px;
-      color: #3b2507;
-      font-size: 0.82rem;
+    #tweak-panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.05rem;
       font-weight: 900;
-      text-align: center;
-      white-space: nowrap;
     }
 
-    @media (max-width: 480px) {
-      #music-player {
-        bottom: 14px;
-        gap: 9px;
-        padding: 8px 10px;
+    .tweak-section {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(47, 38, 29, 0.12);
+    }
+
+    .tweak-section h3 {
+      margin: 0 0 9px;
+      color: rgba(47, 38, 29, 0.8);
+      font-size: 0.88rem;
+      font-weight: 900;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 54px 1fr 68px;
+      align-items: center;
+      gap: 7px;
+      margin: 7px 0;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .control-row input[type="range"] {
+      width: 100%;
+    }
+
+    .control-row input[type="number"] {
+      width: 68px;
+      border: 1px solid rgba(47, 38, 29, 0.14);
+      border-radius: 8px;
+      padding: 4px 5px;
+      color: #2f261d;
+      background: rgba(255, 255, 255, 0.68);
+      font: inherit;
+      text-align: right;
+    }
+
+    #actions {
+      position: sticky;
+      bottom: -14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 14px -14px -14px;
+      padding: 12px 14px 14px;
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(16px);
+    }
+
+    #actions button {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 12px;
+      color: #3b2507;
+      background: linear-gradient(135deg, #ffd166 0%, #f59e0b 100%);
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    #actions button.secondary {
+      color: #374151;
+      background: linear-gradient(135deg, #f3f4f6 0%, #d1d5db 100%);
+    }
+
+    #output {
+      grid-column: 1 / -1;
+      min-height: 54px;
+      margin: 0;
+      padding: 9px;
+      overflow: auto;
+      border-radius: 10px;
+      color: rgba(47, 38, 29, 0.78);
+      background: rgba(47, 38, 29, 0.08);
+      font-family: Consolas, monospace;
+      font-size: 0.68rem;
+      white-space: pre-wrap;
+    }
+
+    a-scene {
+      width: 100vw;
+      height: 100vh;
+    }
+
+    @media (max-width: 620px) {
+      #top-bar {
+        right: 70px;
       }
 
-      .player-btn {
-        width: 38px;
-        height: 38px;
+      #hint-pill {
+        display: none;
       }
 
-      #play-pause {
-        width: 48px;
-        height: 48px;
-      }
-
-      #track-name {
-        min-width: 74px;
-        font-size: 0.75rem;
+      #tweak-panel {
+        top: 106px;
+        width: min(340px, calc(100vw - 18px));
+        right: 9px;
       }
     }
   </style>
@@ -184,202 +258,202 @@
 <body>
   <div id="loader">
     <div id="loader-content">
-      <h1 id="loader-title">Loading secret scene</h1>
+      <h1 id="loader-title">Loading game sandbox</h1>
       <div id="loader-track">
         <div id="loader-fill"></div>
       </div>
     </div>
   </div>
 
-  <div id="info-bar">
-    <span class="title">Secret Scene Sandbox</span>
-    <span class="hint">Drag to orbit | Scroll to zoom | Right-click to pan</span>
+  <div id="top-bar">
+    <div id="title-pill">Treasure Hunt Sandbox</div>
+    <div id="hint-pill">Drag to orbit | Scroll/pinch to zoom | Right-click to pan</div>
   </div>
 
-  <div id="music-player">
-    <button class="player-btn" type="button" onclick="previousTrack()" aria-label="Previous track">&lt;</button>
-    <button class="player-btn" id="play-pause" type="button" onclick="togglePlayback()" aria-label="Play or pause">▶</button>
-    <button class="player-btn" type="button" onclick="nextTrack()" aria-label="Next track">&gt;</button>
-    <span id="track-name">music 1</span>
-  </div>
+  <button id="tweak-toggle" type="button" onclick="toggleTweaks()" aria-label="Toggle tweaks">☰</button>
 
-  <audio id="music-audio" preload="auto"></audio>
+  <aside id="tweak-panel">
+    <h2>Chest Placement Tweaks</h2>
+    <div id="controls"></div>
+    <div id="actions">
+      <button type="button" onclick="copyValues()">Copy Values</button>
+      <button class="secondary" type="button" onclick="resetDefaults()">Reset</button>
+      <pre id="output"></pre>
+    </div>
+  </aside>
 
   <a-scene embedded vr-mode-ui="enabled: false" renderer="logarithmicDepthBuffer: true; colorManagement: true;"
     loading-screen="enabled: false" background="color: #f7d9a6" shadow="type: pcfsoft">
     <a-assets>
-      <a-asset-item id="diorama-model" src="models/diorama-extrascene.glb"></a-asset-item>
-      <a-asset-item id="turtle-model" src="models/turtle.glb"></a-asset-item>
-      <a-asset-item id="rabbit-model" src="models/rabbit.glb"></a-asset-item>
+      <a-asset-item id="diorama-model" src="models/castle.glb"></a-asset-item>
+      <a-asset-item id="gold-chest-model" src="models/chests/gold_chest.glb"></a-asset-item>
     </a-assets>
 
     <a-sky color="#f7d9a6"></a-sky>
 
-    <a-entity id="secret-scene" position="0 0 0" rotation="0 0 0">
-      <a-entity id="diorama-base" gltf-model="#diorama-model" scale="1.001 1.001 1.001" position="0 0 0"
-        shadow="cast: true; receive: true"></a-entity>
-      <a-entity id="pagong" gltf-model="#turtle-model" position="-2 2.2 9" scale="0.2 0.2 0.2" rotation="0 0 0"
-        shadow="cast: true; receive: true"></a-entity>
-      <a-entity id="kuneho" gltf-model="#rabbit-model" position="3.8 3 9.7" scale="0.004 0.004 0.004" rotation="0 180 0"
-        shadow="cast: true; receive: true"></a-entity>
+    <a-entity id="game-scene" position="0 0 0" rotation="0 0 0">
+      <a-entity id="diorama-base" gltf-model="#diorama-model" shadow="cast: true; receive: true"></a-entity>
+
+      <a-entity id="chest-1" gltf-model="#gold-chest-model" shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="chest-2" gltf-model="#gold-chest-model" shadow="cast: true; receive: true"></a-entity>
+      <a-entity id="chest-3" gltf-model="#gold-chest-model" shadow="cast: true; receive: true"></a-entity>
     </a-entity>
 
-    <a-light type="ambient" color="#fff6e6" intensity="0.64"></a-light>
-    <a-light type="directional" color="#ffd08a" intensity="1.25" position="-6 5 5" shadow="cast: true"></a-light>
-    <a-light type="point" color="#fff0c2" intensity="0.65" distance="28" position="-5 6 4"></a-light>
-    <a-light type="point" color="#c7ddff" intensity="0.25" distance="22" position="6 5 -5"></a-light>
+    <a-light type="ambient" color="#fff6e6" intensity="0.58"></a-light>
+    <a-light type="directional" color="#ffd08a" intensity="1.35" position="-6 4 5" shadow="cast: true"></a-light>
+    <a-light type="point" color="#fff0c2" intensity="0.85" distance="22" position="-5 5 4"></a-light>
+    <a-light type="point" color="#c7ddff" intensity="0.28" distance="18" position="6 4 -5"></a-light>
 
-    <a-entity camera position="0 5 15"
-      orbit-controls="target: 0 1 0; minDistance: 1; maxDistance: 80; initialPosition: 0 5 15; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
+    <a-entity id="game-camera" camera position="0 4 10"
+      orbit-controls="target: 0 1 0; minDistance: 1; maxDistance: 48; initialPosition: 0 4 10; enableDamping: true; dampingFactor: 0.1; rotateSpeed: 0.5; zoomSpeed: 0.8">
     </a-entity>
   </a-scene>
 
   <script>
-    const BASE_POSES = {
-      pagong: { x: -2, y: 2.2, z: 9, scale: 0.2, ry: 0 },
-      kuneho: { x: 3.8, y: 3, z: 9.7, scale: 0.004, ry: 180 }
+    const STORAGE_KEY = 'treasureGameSandboxTweaks:v1';
+    const DEFAULT_VALUES = {
+      diorama: { id: 'diorama-base', label: 'Diorama', scale: 2.001, x: 0, y: 0, z: 0, ry: 0, rx: 0, rz: 0 },
+      chest1: { id: 'chest-1', label: 'Gold Chest 1', scale: 0.5, x: -7, y: 5.5, z: 4.2, ry: 180, rx: 0, rz: 0 },
+      chest2: { id: 'chest-2', label: 'Gold Chest 2', scale: 0.5, x: 7.5, y: 5.5, z: -5, ry: 180, rx: 0, rz: 0 },
+      chest3: { id: 'chest-3', label: 'Gold Chest 3', scale: 0.5, x: 16.6, y: 4.4, z: 10.4, ry: 5, rx: 0, rz: 0 }
     };
-    const TRACKS = [
-      { name: 'music 1', src: 'assets/audio/extra/es-music1.mp3', animation: 'animation-1' },
-      { name: 'music 2', src: 'assets/audio/extra/es-music2.mp3', animation: 'animation-2' },
-      { name: 'music 3', src: 'assets/audio/extra/es-music3.mp3', animation: 'animation-3' }
-    ];
+
+    const FIELD_CONFIG = {
+      scale: { label: 'Scale', min: 0.001, max: 3.5, step: 0.001 },
+      x: { label: 'X', min: -40, max: 40, step: 0.1 },
+      y: { label: 'Y', min: -10, max: 30, step: 0.1 },
+      z: { label: 'Z', min: -40, max: 40, step: 0.1 },
+      ry: { label: 'Rot Y', min: -180, max: 180, step: 1 },
+      rx: { label: 'Rot X', min: -180, max: 180, step: 1 },
+      rz: { label: 'Rot Z', min: -180, max: 180, step: 1 }
+    };
+
     const PRELOAD_ASSETS = [
-      'models/diorama-extrascene.glb',
-      'models/turtle.glb',
-      'models/rabbit.glb',
-      ...TRACKS.map(track => track.src)
+      'models/castle.glb',
+      'models/chests/gold_chest.glb'
     ];
 
-    let animationFrameId = null;
-    let animationStartedAt = 0;
-    let animationRunning = false;
-    let currentTrackIndex = 0;
-    let isPlaying = false;
+    let values = loadValues();
 
-    function applyPose(key, pose) {
-      const entity = document.getElementById(key);
-      entity.setAttribute('position', `${pose.x.toFixed(3)} ${pose.y.toFixed(3)} ${pose.z.toFixed(3)}`);
-      entity.setAttribute('rotation', `${(pose.rx || 0).toFixed(2)} ${pose.ry.toFixed(2)} ${(pose.rz || 0).toFixed(2)}`);
+    function cloneDefaults() {
+      return JSON.parse(JSON.stringify(DEFAULT_VALUES));
     }
 
-    function resetActors() {
-      Object.entries(BASE_POSES).forEach(([key, pose]) => {
-        const entity = document.getElementById(key);
-        entity.setAttribute('position', `${pose.x} ${pose.y} ${pose.z}`);
-        entity.setAttribute('rotation', `0 ${pose.ry} 0`);
-        entity.setAttribute('scale', `${pose.scale} ${pose.scale} ${pose.scale}`);
+    function loadValues() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return cloneDefaults();
+        return {
+          ...cloneDefaults(),
+          ...saved
+        };
+      } catch {
+        return cloneDefaults();
+      }
+    }
+
+    function saveValues() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(values));
+    }
+
+    function formatNumber(value) {
+      return Number(value).toFixed(3).replace(/\.?0+$/, '');
+    }
+
+    function applyEntity(key) {
+      const item = values[key];
+      const entity = document.getElementById(item.id);
+      entity.setAttribute('position', `${item.x} ${item.y} ${item.z}`);
+      entity.setAttribute('rotation', `${item.rx} ${item.ry} ${item.rz}`);
+      entity.setAttribute('scale', `${item.scale} ${item.scale} ${item.scale}`);
+    }
+
+    function applyAll() {
+      Object.keys(values).forEach(applyEntity);
+      updateOutput();
+    }
+
+    function setValue(key, field, rawValue) {
+      values[key][field] = Number(rawValue);
+      applyEntity(key);
+      saveValues();
+      syncInputs(key, field);
+      updateOutput();
+    }
+
+    function syncInputs(key, field) {
+      const value = values[key][field];
+      document.querySelectorAll(`[data-key="${key}"][data-field="${field}"]`).forEach(input => {
+        if (Number(input.value) !== value) input.value = value;
       });
     }
 
-    function currentAnimation() {
-      return TRACKS[currentTrackIndex].animation;
+    function createControl(key, field) {
+      const config = FIELD_CONFIG[field];
+      const value = values[key][field];
+      return `
+        <label class="control-row">
+          <span>${config.label}</span>
+          <input type="range" min="${config.min}" max="${config.max}" step="${config.step}" value="${value}"
+            data-key="${key}" data-field="${field}">
+          <input type="number" min="${config.min}" max="${config.max}" step="${config.step}" value="${value}"
+            data-key="${key}" data-field="${field}">
+        </label>
+      `;
     }
 
-    function animationTick(timestamp) {
-      if (!animationRunning) return;
-      if (!animationStartedAt) animationStartedAt = timestamp;
+    function renderControls() {
+      const controls = document.getElementById('controls');
+      controls.innerHTML = Object.entries(values).map(([key, item]) => `
+        <section class="tweak-section">
+          <h3>${item.label}</h3>
+          ${Object.keys(FIELD_CONFIG).map(field => createControl(key, field)).join('')}
+        </section>
+      `).join('');
 
-      const elapsed = (timestamp - animationStartedAt) / 1000;
-      const selected = currentAnimation();
-      const pagongBase = BASE_POSES.pagong;
-      const kunehoBase = BASE_POSES.kuneho;
-
-      if (selected === 'animation-1') {
-        const pagongJump = Math.abs(Math.sin(elapsed * Math.PI * 2.15)) * 0.55;
-        const kunehoJump = Math.abs(Math.sin((elapsed * Math.PI * 2.45) + 1.25)) * 0.72;
-        applyPose('pagong', { ...pagongBase, y: pagongBase.y + pagongJump });
-        applyPose('kuneho', { ...kunehoBase, y: kunehoBase.y + kunehoJump });
-      }
-
-      if (selected === 'animation-2') {
-        const pagongSway = Math.sin(elapsed * Math.PI * 1.45) * 9;
-        const kunehoSway = Math.sin((elapsed * Math.PI * 1.65) + 0.8) * 12;
-        applyPose('pagong', { ...pagongBase, rz: pagongSway });
-        applyPose('kuneho', { ...kunehoBase, rz: kunehoSway });
-      }
-
-      if (selected === 'animation-3') {
-        const pagongJump = Math.abs(Math.sin(elapsed * Math.PI * 2.05)) * 0.48;
-        const kunehoJump = Math.abs(Math.sin((elapsed * Math.PI * 2.35) + 1.35)) * 0.65;
-        const pagongSpin = Math.sin(elapsed * Math.PI * 1.15) * 28;
-        const kunehoSpin = Math.sin((elapsed * Math.PI * 1.35) + 0.75) * 38;
-        applyPose('pagong', { ...pagongBase, y: pagongBase.y + pagongJump, ry: pagongBase.ry + pagongSpin });
-        applyPose('kuneho', { ...kunehoBase, y: kunehoBase.y + kunehoJump, ry: kunehoBase.ry + kunehoSpin });
-      }
-
-      animationFrameId = requestAnimationFrame(animationTick);
-    }
-
-    function startAnimation() {
-      if (animationRunning) return;
-      animationRunning = true;
-      animationStartedAt = 0;
-      animationFrameId = requestAnimationFrame(animationTick);
-    }
-
-    function stopAnimation() {
-      animationRunning = false;
-      animationStartedAt = 0;
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-        animationFrameId = null;
-      }
-      resetActors();
-    }
-
-    function loadTrack(index) {
-      currentTrackIndex = (index + TRACKS.length) % TRACKS.length;
-      const track = TRACKS[currentTrackIndex];
-      const audio = document.getElementById('music-audio');
-      audio.src = track.src;
-      audio.currentTime = 0;
-      document.getElementById('track-name').textContent = track.name;
-      stopAnimation();
-      if (isPlaying) {
-        playCurrentTrack();
-      }
-    }
-
-    function playCurrentTrack() {
-      const audio = document.getElementById('music-audio');
-      isPlaying = true;
-      audio.play().then(() => {
-        document.getElementById('play-pause').textContent = '❚❚';
-        startAnimation();
-      }).catch(() => {
-        isPlaying = false;
-        document.getElementById('play-pause').textContent = '▶';
+      controls.querySelectorAll('input').forEach(input => {
+        input.addEventListener('input', event => {
+          setValue(event.target.dataset.key, event.target.dataset.field, event.target.value);
+        });
       });
     }
 
-    function pauseCurrentTrack() {
-      const audio = document.getElementById('music-audio');
-      isPlaying = false;
-      audio.pause();
-      document.getElementById('play-pause').textContent = '▶';
-      stopAnimation();
+    function getValuesText() {
+      return [
+        `Diorama: model=castle.glb, scale=${formatNumber(values.diorama.scale)}, y=${formatNumber(values.diorama.y)}, rot=${formatNumber(values.diorama.ry)}, tilt=${formatNumber(values.diorama.rx)}`,
+        `Gold Chest 1: scale=${formatNumber(values.chest1.scale)}, pos=(${formatNumber(values.chest1.x)}, ${formatNumber(values.chest1.y)}, ${formatNumber(values.chest1.z)}), rot=${formatNumber(values.chest1.ry)}`,
+        `Gold Chest 2: scale=${formatNumber(values.chest2.scale)}, pos=(${formatNumber(values.chest2.x)}, ${formatNumber(values.chest2.y)}, ${formatNumber(values.chest2.z)}), rot=${formatNumber(values.chest2.ry)}`,
+        `Gold Chest 3: scale=${formatNumber(values.chest3.scale)}, pos=(${formatNumber(values.chest3.x)}, ${formatNumber(values.chest3.y)}, ${formatNumber(values.chest3.z)}), rot=${formatNumber(values.chest3.ry)}`,
+        'Scene height: 0'
+      ].join('\n');
     }
 
-    function togglePlayback() {
-      if (isPlaying) {
-        pauseCurrentTrack();
-      } else {
-        playCurrentTrack();
-      }
+    function updateOutput() {
+      document.getElementById('output').textContent = getValuesText();
     }
 
-    function nextTrack() {
-      loadTrack(currentTrackIndex + 1);
+    function copyValues() {
+      const text = getValuesText();
+      updateOutput();
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(text).catch(() => {});
     }
 
-    function previousTrack() {
-      loadTrack(currentTrackIndex - 1);
+    function resetDefaults() {
+      values = cloneDefaults();
+      saveValues();
+      renderControls();
+      applyAll();
+    }
+
+    function toggleTweaks() {
+      document.body.classList.toggle('tweaks-closed');
     }
 
     async function preloadAssets() {
       const fill = document.getElementById('loader-fill');
       let loaded = 0;
+
       await Promise.all(PRELOAD_ASSETS.map(async asset => {
         try {
           const response = await fetch(asset, { cache: 'force-cache' });
@@ -392,13 +466,21 @@
           fill.style.width = `${Math.round((loaded / PRELOAD_ASSETS.length) * 100)}%`;
         }
       }));
+
+      await new Promise(resolve => {
+        const assets = document.querySelector('a-assets');
+        if (assets.hasLoaded) {
+          resolve();
+        } else {
+          assets.addEventListener('loaded', resolve, { once: true });
+        }
+      });
+
       document.body.classList.add('is-ready');
     }
 
-    document.getElementById('music-audio').addEventListener('ended', nextTrack);
-
-    resetActors();
-    loadTrack(0);
+    renderControls();
+    applyAll();
     preloadAssets();
   </script>
 </body>
