@@ -210,7 +210,7 @@
       left: 50%;
       top: 50%;
       width: min(78vw, 360px);
-      aspect-ratio: 4 / 3;
+      aspect-ratio: 3 / 4;
       opacity: 0;
       transform: translate(-50%, -50%);
       border: 2px solid rgba(255, 255, 255, 0.82);
@@ -248,6 +248,18 @@
     #scan-guide.visible,
     #scan-hint.visible {
       opacity: 1;
+    }
+
+    @media (orientation: landscape) {
+      #scan-guide {
+        width: min(62vw, 520px);
+        height: min(62vh, 320px);
+        aspect-ratio: auto;
+      }
+
+      #scan-hint {
+        bottom: 92px;
+      }
     }
 
     /* Play / Stop button — bottom center */
@@ -538,8 +550,8 @@
     const resetArBtn = document.getElementById('reset-ar-btn');
     const DEFAULT_AR_POSITION = { x: 0, y: 0, z: 0 };
     const DEFAULT_AR_SCALE = 0.025;
-    const MIN_AR_SCALE = 0.018;
-    const MAX_AR_SCALE = 0.045;
+    const MIN_AR_SCALE = 0.009;
+    const MAX_AR_SCALE = 0.09;
     const DRAG_SENSITIVITY = 0.0022;
     const POSITION_LIMIT = 0.8;
     let arPosition = { ...DEFAULT_AR_POSITION };
@@ -590,6 +602,20 @@
       return Math.hypot(dx, dy);
     }
 
+    function getDragDelta(dx, dy) {
+      if (window.matchMedia('(orientation: landscape)').matches) {
+        return {
+          x: -dy * DRAG_SENSITIVITY,
+          y: -dx * DRAG_SENSITIVITY
+        };
+      }
+
+      return {
+        x: dx * DRAG_SENSITIVITY,
+        y: -dy * DRAG_SENSITIVITY
+      };
+    }
+
     function handleTouchStart(event) {
       if (!cameraStarted || isUiTouch(event)) return;
 
@@ -610,9 +636,10 @@
         const point = getTouchPoint(event.touches[0]);
         const dx = point.x - lastTouchPoint.x;
         const dy = point.y - lastTouchPoint.y;
+        const delta = getDragDelta(dx, dy);
 
-        arPosition.x = clamp(arPosition.x + dx * DRAG_SENSITIVITY, -POSITION_LIMIT, POSITION_LIMIT);
-        arPosition.y = clamp(arPosition.y - dy * DRAG_SENSITIVITY, -POSITION_LIMIT, POSITION_LIMIT);
+        arPosition.x = clamp(arPosition.x + delta.x, -POSITION_LIMIT, POSITION_LIMIT);
+        arPosition.y = clamp(arPosition.y + delta.y, -POSITION_LIMIT, POSITION_LIMIT);
         setDioramaPlacement(arPosition, arScale);
         lastTouchPoint = point;
       } else if (event.touches.length === 2 && pinchStartDistance > 0) {
