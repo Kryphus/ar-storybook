@@ -192,7 +192,7 @@
     /* Scan hint — shown while waiting for marker */
     #scan-hint {
       position: absolute;
-      bottom: 110px;
+      bottom: 122px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.65);
@@ -203,6 +203,51 @@
       white-space: nowrap;
       transition: opacity 0.4s;
       opacity: 0;
+    }
+
+    #scan-guide {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(78vw, 360px);
+      aspect-ratio: 4 / 3;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(255, 255, 255, 0.82);
+      border-radius: 18px;
+      box-shadow:
+        0 0 0 999px rgba(0, 0, 0, 0.18),
+        0 0 24px rgba(255, 255, 255, 0.18);
+      transition: opacity 0.35s ease;
+    }
+
+    #scan-guide::before,
+    #scan-guide::after {
+      content: "";
+      position: absolute;
+      width: 26px;
+      height: 26px;
+      border-color: #a3e635;
+      border-style: solid;
+    }
+
+    #scan-guide::before {
+      top: -2px;
+      left: -2px;
+      border-width: 4px 0 0 4px;
+      border-radius: 16px 0 0 0;
+    }
+
+    #scan-guide::after {
+      right: -2px;
+      bottom: -2px;
+      border-width: 0 4px 4px 0;
+      border-radius: 0 0 16px 0;
+    }
+
+    #scan-guide.visible,
+    #scan-hint.visible {
+      opacity: 1;
     }
 
     /* Play / Stop button — bottom center */
@@ -229,6 +274,34 @@
     #anim-btn.playing {
       background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
       box-shadow: 0 4px 20px rgba(240,84,84,0.45);
+    }
+
+    #reset-ar-btn {
+      position: absolute;
+      right: 16px;
+      bottom: 32px;
+      display: none;
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(255,255,255,0.24);
+      border-radius: 999px;
+      color: rgba(255,255,255,0.92);
+      background: rgba(10,10,26,0.72);
+      box-shadow: 0 4px 18px rgba(0,0,0,0.24);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-size: 1.25rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+
+    #reset-ar-btn:active {
+      transform: scale(0.92);
+    }
+
+    #reset-ar-btn.visible {
+      display: block;
     }
     /* Push MindAR's scan frame below our nav bar */
     .mindar-ui-overlay {
@@ -265,9 +338,11 @@
 
     <a href="../../pages.html" id="back-btn">← Pahina</a>
 
-    <div id="scan-hint">📷 Itutok sa Pahina 1</div>
+    <div id="scan-guide" aria-hidden="true"></div>
+    <div id="scan-hint">Center the full Pahina 1 marker</div>
 
     <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; I-play</button>
+    <button id="reset-ar-btn" type="button" onclick="resetARPlacement()" aria-label="Reset AR placement">↺</button>
   </div>
 
   <!-- ============================================ -->
@@ -457,12 +532,117 @@
     // ============================================================
     const arTarget = document.getElementById('ar-target');
     const sceneEl  = document.querySelector('a-scene');
+    const scanHint = document.getElementById('scan-hint');
+    const scanGuide = document.getElementById('scan-guide');
+    const dioramaScene = document.getElementById('diorama-scene');
+    const resetArBtn = document.getElementById('reset-ar-btn');
+    const DEFAULT_AR_POSITION = { x: 0, y: 0, z: 0 };
+    const DEFAULT_AR_SCALE = 0.025;
+    const MIN_AR_SCALE = 0.018;
+    const MAX_AR_SCALE = 0.045;
+    const DRAG_SENSITIVITY = 0.0022;
+    const POSITION_LIMIT = 0.8;
+    let arPosition = { ...DEFAULT_AR_POSITION };
+    let arScale = DEFAULT_AR_SCALE;
+    let lastTouchPoint = null;
+    let pinchStartDistance = 0;
+    let pinchStartScale = DEFAULT_AR_SCALE;
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function setDioramaPlacement(position = arPosition, scale = arScale) {
+      dioramaScene.setAttribute('position', `${position.x} ${position.y} ${position.z}`);
+      dioramaScene.setAttribute('scale', `${scale} ${scale} ${scale}`);
+    }
+
+    function resetARPlacement() {
+      arPosition = { ...DEFAULT_AR_POSITION };
+      arScale = DEFAULT_AR_SCALE;
+      lastTouchPoint = null;
+      pinchStartDistance = 0;
+      pinchStartScale = DEFAULT_AR_SCALE;
+      setDioramaPlacement(arPosition, arScale);
+    }
+
+    function showScanGuide() {
+      scanHint.classList.add('visible');
+      scanGuide.classList.add('visible');
+    }
+
+    function hideScanGuide() {
+      scanHint.classList.remove('visible');
+      scanGuide.classList.remove('visible');
+    }
+
+    function isUiTouch(event) {
+      return Boolean(event.target.closest('#ui-overlay button, #ui-overlay a, #startup-screen'));
+    }
+
+    function getTouchPoint(touch) {
+      return { x: touch.clientX, y: touch.clientY };
+    }
+
+    function getTouchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    function handleTouchStart(event) {
+      if (!cameraStarted || isUiTouch(event)) return;
+
+      if (event.touches.length === 1) {
+        lastTouchPoint = getTouchPoint(event.touches[0]);
+      } else if (event.touches.length === 2) {
+        lastTouchPoint = null;
+        pinchStartDistance = getTouchDistance(event.touches);
+        pinchStartScale = arScale;
+      }
+    }
+
+    function handleTouchMove(event) {
+      if (!cameraStarted || isUiTouch(event)) return;
+      if (event.cancelable) event.preventDefault();
+
+      if (event.touches.length === 1 && lastTouchPoint) {
+        const point = getTouchPoint(event.touches[0]);
+        const dx = point.x - lastTouchPoint.x;
+        const dy = point.y - lastTouchPoint.y;
+
+        arPosition.x = clamp(arPosition.x + dx * DRAG_SENSITIVITY, -POSITION_LIMIT, POSITION_LIMIT);
+        arPosition.y = clamp(arPosition.y - dy * DRAG_SENSITIVITY, -POSITION_LIMIT, POSITION_LIMIT);
+        setDioramaPlacement(arPosition, arScale);
+        lastTouchPoint = point;
+      } else if (event.touches.length === 2 && pinchStartDistance > 0) {
+        const distance = getTouchDistance(event.touches);
+        arScale = clamp(pinchStartScale * (distance / pinchStartDistance), MIN_AR_SCALE, MAX_AR_SCALE);
+        setDioramaPlacement(arPosition, arScale);
+      }
+    }
+
+    function handleTouchEnd(event) {
+      if (event.touches.length === 1) {
+        lastTouchPoint = getTouchPoint(event.touches[0]);
+      } else {
+        lastTouchPoint = null;
+        pinchStartDistance = 0;
+        pinchStartScale = arScale;
+      }
+    }
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
     sceneEl.addEventListener('arReady', () => {
       log('MindAR ready - camera active.');
       startupScreen.classList.add('hidden');
-      document.getElementById('scan-hint').style.opacity = '1';
+      showScanGuide();
       document.getElementById('anim-btn').style.display = 'block';
+      resetArBtn.classList.add('visible');
     });
     sceneEl.addEventListener('arError', (e) => {
       cameraStarted = false;
@@ -501,14 +681,14 @@
     }, 12000);
 
     arTarget.addEventListener('targetFound', () => {
-      document.getElementById('scan-hint').style.opacity = '0';
+      hideScanGuide();
       // Auto-start animation + narration when the book page is detected
       startAnimation();
       startNarration();
     });
 
     arTarget.addEventListener('targetLost', () => {
-      document.getElementById('scan-hint').style.opacity = '1';
+      showScanGuide();
       // Pause narration when page is no longer visible (animation keeps going)
       pauseNarration();
     });
