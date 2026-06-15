@@ -205,58 +205,11 @@
       opacity: 0;
     }
 
-    #scan-guide {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      width: min(78vw, 360px);
-      aspect-ratio: 3 / 4;
-      opacity: 0;
-      transform: translate(-50%, -50%);
-      border: 2px solid rgba(255, 255, 255, 0.82);
-      border-radius: 18px;
-      box-shadow:
-        0 0 0 999px rgba(0, 0, 0, 0.18),
-        0 0 24px rgba(255, 255, 255, 0.18);
-      transition: opacity 0.35s ease;
-    }
-
-    #scan-guide::before,
-    #scan-guide::after {
-      content: "";
-      position: absolute;
-      width: 26px;
-      height: 26px;
-      border-color: #a3e635;
-      border-style: solid;
-    }
-
-    #scan-guide::before {
-      top: -2px;
-      left: -2px;
-      border-width: 4px 0 0 4px;
-      border-radius: 16px 0 0 0;
-    }
-
-    #scan-guide::after {
-      right: -2px;
-      bottom: -2px;
-      border-width: 0 4px 4px 0;
-      border-radius: 0 0 16px 0;
-    }
-
-    #scan-guide.visible,
     #scan-hint.visible {
       opacity: 1;
     }
 
     @media (orientation: landscape) {
-      #scan-guide {
-        width: min(62vw, 520px);
-        height: min(62vh, 320px);
-        aspect-ratio: auto;
-      }
-
       #scan-hint {
         bottom: 92px;
       }
@@ -350,7 +303,6 @@
 
     <a href="../../pages.html" id="back-btn">← Pahina</a>
 
-    <div id="scan-guide" aria-hidden="true"></div>
     <div id="scan-hint">Center the full Pahina 1 marker</div>
 
     <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; I-play</button>
@@ -545,7 +497,6 @@
     const arTarget = document.getElementById('ar-target');
     const sceneEl  = document.querySelector('a-scene');
     const scanHint = document.getElementById('scan-hint');
-    const scanGuide = document.getElementById('scan-guide');
     const dioramaScene = document.getElementById('diorama-scene');
     const resetArBtn = document.getElementById('reset-ar-btn');
     const DEFAULT_AR_POSITION = { x: 0, y: 0, z: 0 };
@@ -580,12 +531,10 @@
 
     function showScanGuide() {
       scanHint.classList.add('visible');
-      scanGuide.classList.add('visible');
     }
 
     function hideScanGuide() {
       scanHint.classList.remove('visible');
-      scanGuide.classList.remove('visible');
     }
 
     function isUiTouch(event) {
@@ -605,8 +554,8 @@
     function getDragDelta(dx, dy) {
       if (window.matchMedia('(orientation: landscape)').matches) {
         return {
-          x: -dy * DRAG_SENSITIVITY,
-          y: -dx * DRAG_SENSITIVITY
+          x: (dx - dy * 0.35) * DRAG_SENSITIVITY,
+          y: (-dy - dx * 0.35) * DRAG_SENSITIVITY
         };
       }
 
