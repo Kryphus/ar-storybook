@@ -173,26 +173,24 @@
     #back-btn {
       position: absolute;
       top: 14px; left: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 9px 16px;
-      border: 1px solid rgba(255,255,255,0.25);
-      border-radius: 22px;
-      background: rgba(10,10,26,0.75);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      color: rgba(255,255,255,0.9);
-      font-size: 0.82rem;
-      font-weight: 600;
+      display: block;
+      width: 54px;
+      height: 54px;
       text-decoration: none;
-      transition: background 0.2s, transform 0.15s;
+      transition: transform 0.15s ease, filter 0.2s ease;
     }
     #back-btn:active { transform: scale(0.95); }
+    #back-btn img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 5px 14px rgba(92, 64, 28, 0.28));
+    }
 /* Scan hint — shown while waiting for marker */
     #scan-hint {
       position: absolute;
-      bottom: 110px;
+      bottom: 122px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.65);
@@ -205,6 +203,16 @@
       opacity: 0;
     }
 
+    #scan-hint.visible {
+      opacity: 1;
+    }
+
+    @media (orientation: landscape) {
+      #scan-hint {
+        bottom: 92px;
+      }
+    }
+
     /* Play / Stop button — bottom center */
     #anim-btn {
       position: absolute;
@@ -212,23 +220,70 @@
       left: 50%;
       display: none;
       transform: translateX(-50%);
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      border: none;
-      color: white;
+      background: linear-gradient(135deg, #ffd166 0%, #f59e0b 100%);
+      border: 1px solid rgba(133, 77, 14, 0.28);
+      color: #3b2507;
       border-radius: 50px;
       padding: 14px 40px;
       font-size: 1rem;
-      font-weight: 700;
+      font-weight: 900;
       cursor: pointer;
       letter-spacing: 0.4px;
-      box-shadow: 0 4px 20px rgba(102,126,234,0.55);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 5px 0 rgba(180, 83, 9, 0.72),
+        0 16px 28px rgba(217, 119, 6, 0.28);
       transition: transform 0.15s, box-shadow 0.15s, background 0.3s;
       white-space: nowrap;
     }
-    #anim-btn:active { transform: translateX(-50%) scale(0.95); }
+    #anim-btn:active {
+      transform: translateX(-50%) translateY(2px) scale(0.96);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 2px 0 rgba(180, 83, 9, 0.72),
+        0 8px 18px rgba(217, 119, 6, 0.2);
+    }
     #anim-btn.playing {
-      background: linear-gradient(135deg, #f05454 0%, #c0392b 100%);
-      box-shadow: 0 4px 20px rgba(240,84,84,0.45);
+      background: linear-gradient(135deg, #ffb347 0%, #f97316 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.36),
+        0 5px 0 rgba(154, 52, 18, 0.7),
+        0 16px 28px rgba(234, 88, 12, 0.26);
+    }
+
+    #reset-ar-btn {
+      position: absolute;
+      right: 16px;
+      bottom: 32px;
+      display: none;
+      width: 48px;
+      height: 48px;
+      border: 1px solid rgba(133, 77, 14, 0.28);
+      border-radius: 999px;
+      color: #3b2507;
+      background: linear-gradient(135deg, #fff1b8 0%, #f59e0b 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.42),
+        0 4px 0 rgba(180, 83, 9, 0.68),
+        0 13px 24px rgba(217, 119, 6, 0.22);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      font-size: 1.25rem;
+      font-weight: 900;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.2s ease;
+    }
+
+    #reset-ar-btn:active {
+      transform: translateY(2px) scale(0.94);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 2px 0 rgba(180, 83, 9, 0.68),
+        0 8px 18px rgba(217, 119, 6, 0.18);
+    }
+
+    #reset-ar-btn.visible {
+      display: block;
     }
     /* ===== MindAR built-in overlay tweaks ===== */
 /* Push MindAR's scan frame below our nav bar */
@@ -264,10 +319,14 @@
   <!-- ============================================ -->
   <div id="ui-overlay">
 
-    <a href="../../pages.html" id="back-btn">← Pahina</a>
-<div id="scan-hint">📷 Itutok sa Pahina 7</div>
+    <a href="../../pages.html" id="back-btn" aria-label="Back to pages">
+      <img src="../../assets/images/back-button-arscreen.png" alt="">
+    </a>
+
+    <div id="scan-hint">Center the full Pahina 7 marker</div>
 
     <button id="anim-btn" onclick="handleAnimBtn()">&#9654; &nbsp; I-play</button>
+    <button id="reset-ar-btn" type="button" onclick="resetARPlacement()" aria-label="Reset AR placement">↺</button>
   </div>
 
   <!-- ============================================ -->
@@ -432,12 +491,129 @@
     // ============================================================
     const arTarget = document.getElementById('ar-target');
     const sceneEl  = document.querySelector('a-scene');
+    const scanHint = document.getElementById('scan-hint');
+    const dioramaScene = document.getElementById('diorama-scene');
+    const resetArBtn = document.getElementById('reset-ar-btn');
+    const DEFAULT_AR_POSITION = { x: 0, y: 0, z: 0 };
+    const DEFAULT_AR_SCALE = 0.025;
+    const MIN_AR_SCALE = 0.009;
+    const MAX_AR_SCALE = 0.09;
+    const DRAG_SENSITIVITY = 0.0022;
+    const POSITION_LIMIT = 0.8;
+    let arPosition = { ...DEFAULT_AR_POSITION };
+    let arScale = DEFAULT_AR_SCALE;
+    let lastTouchPoint = null;
+    let pinchStartDistance = 0;
+    let pinchStartScale = DEFAULT_AR_SCALE;
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function setDioramaPlacement(position = arPosition, scale = arScale) {
+      dioramaScene.setAttribute('position', `${position.x} ${position.y} ${position.z}`);
+      dioramaScene.setAttribute('scale', `${scale} ${scale} ${scale}`);
+    }
+
+    function resetARPlacement() {
+      arPosition = { ...DEFAULT_AR_POSITION };
+      arScale = DEFAULT_AR_SCALE;
+      lastTouchPoint = null;
+      pinchStartDistance = 0;
+      pinchStartScale = DEFAULT_AR_SCALE;
+      setDioramaPlacement(arPosition, arScale);
+    }
+
+    function showScanGuide() {
+      scanHint.classList.add('visible');
+    }
+
+    function hideScanGuide() {
+      scanHint.classList.remove('visible');
+    }
+
+    function isUiTouch(event) {
+      return Boolean(event.target.closest('#ui-overlay button, #ui-overlay a, #startup-screen'));
+    }
+
+    function getTouchPoint(touch) {
+      return { x: touch.clientX, y: touch.clientY };
+    }
+
+    function getTouchDistance(touches) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      return Math.hypot(dx, dy);
+    }
+
+    function getDragDelta(dx, dy) {
+      if (window.matchMedia('(orientation: landscape)').matches) {
+        return {
+          x: (dx - dy * 0.35) * DRAG_SENSITIVITY,
+          y: (-dy - dx * 0.35) * DRAG_SENSITIVITY
+        };
+      }
+
+      return {
+        x: dx * DRAG_SENSITIVITY,
+        y: -dy * DRAG_SENSITIVITY
+      };
+    }
+
+    function handleTouchStart(event) {
+      if (!cameraStarted || isUiTouch(event)) return;
+
+      if (event.touches.length === 1) {
+        lastTouchPoint = getTouchPoint(event.touches[0]);
+      } else if (event.touches.length === 2) {
+        lastTouchPoint = null;
+        pinchStartDistance = getTouchDistance(event.touches);
+        pinchStartScale = arScale;
+      }
+    }
+
+    function handleTouchMove(event) {
+      if (!cameraStarted || isUiTouch(event)) return;
+      if (event.cancelable) event.preventDefault();
+
+      if (event.touches.length === 1 && lastTouchPoint) {
+        const point = getTouchPoint(event.touches[0]);
+        const dx = point.x - lastTouchPoint.x;
+        const dy = point.y - lastTouchPoint.y;
+        const delta = getDragDelta(dx, dy);
+
+        arPosition.x = clamp(arPosition.x + delta.x, -POSITION_LIMIT, POSITION_LIMIT);
+        arPosition.y = clamp(arPosition.y + delta.y, -POSITION_LIMIT, POSITION_LIMIT);
+        setDioramaPlacement(arPosition, arScale);
+        lastTouchPoint = point;
+      } else if (event.touches.length === 2 && pinchStartDistance > 0) {
+        const distance = getTouchDistance(event.touches);
+        arScale = clamp(pinchStartScale * (distance / pinchStartDistance), MIN_AR_SCALE, MAX_AR_SCALE);
+        setDioramaPlacement(arPosition, arScale);
+      }
+    }
+
+    function handleTouchEnd(event) {
+      if (event.touches.length === 1) {
+        lastTouchPoint = getTouchPoint(event.touches[0]);
+      } else {
+        lastTouchPoint = null;
+        pinchStartDistance = 0;
+        pinchStartScale = arScale;
+      }
+    }
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
     sceneEl.addEventListener('arReady', () => {
       log('MindAR ready - camera active.');
       startupScreen.classList.add('hidden');
-      document.getElementById('scan-hint').style.opacity = '1';
+      showScanGuide();
       document.getElementById('anim-btn').style.display = 'block';
+      resetArBtn.classList.add('visible');
       setTimeout(checkCameraFeed, 1200);
     });
     sceneEl.addEventListener('arError', (e) => {
@@ -477,7 +653,7 @@
     }, 12000);
 
     arTarget.addEventListener('targetFound', () => {
-      document.getElementById('scan-hint').style.opacity = '0';
+      hideScanGuide();
       // Auto-start animation + narration when the book page is detected
       const audio = document.getElementById('narration');
       if (!animationFinished || audio.ended || audio.currentTime === 0) {
@@ -487,7 +663,7 @@
     });
 
     arTarget.addEventListener('targetLost', () => {
-      document.getElementById('scan-hint').style.opacity = '1';
+      showScanGuide();
       // Pause narration when page is no longer visible (animation keeps going)
       pauseNarration();
     });
